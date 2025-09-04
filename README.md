@@ -150,6 +150,8 @@ See [action.yml](./action.yml) for more detail.
 | retry-max-attempts        | Limits the number of retry attempts before giving up. Defaults to 12.                             |    No    |
 | special-characters-workaround | Uncommonly, some environments cannot tolerate special characters in a secret key. This option will retry fetching credentials until the secret access key does not contain special characters. This option overrides disable-retry and retry-max-attempts. | No |
 | use-existing-credentials  | When set, the action will check if existing credentials are valid and exit if they are. Defaults to false. |    No    |
+| allowed-account-ids       | A comma-delimited list of expected AWS account IDs. The action will fail if we receive credentials for the wrong account. |    No    |
+| force-skip-oidc           | When set, the action will skip using GitHub OIDC provider even if the id-token permission is set. |    No    |
 </details>
 
 #### Adjust the retry mechanism
@@ -477,6 +479,13 @@ This example shows that you can reference the fetched credentials as outputs if
 `output-credentials` is set to true. This example also shows that you can use
 the `aws-session-token` input in a situation where session tokens are fetched
 and passed to this action.
+
+Versioning
+----------
+Starting with version 5.0.0, this action uses semantic-style release tags and
+[immutable releases](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases).
+A floating version tag (vN) is also provided for convenience: this tag will
+move to the latest major version (vN -> vN.2.1, vM -> vM.0.0, etc.).
 
 License
 -------
