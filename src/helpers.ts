@@ -1,5 +1,5 @@
 import * as core from '@actions/core';
-import type { Credentials } from '@aws-sdk/client-sts';
+import type { Credentials, STSClient } from '@aws-sdk/client-sts';
 import { GetCallerIdentityCommand } from '@aws-sdk/client-sts';
 import type { CredentialsClient } from './CredentialsClient';
 
@@ -28,6 +28,7 @@ export function translateEnvVariables() {
     'RETRY_MAX_ATTEMPTS',
     'SPECIAL_CHARACTERS_WORKAROUND',
     'USE_EXISTING_CREDENTIALS',
+    'NO_PROXY',
   ];
   // Treat HTTPS_PROXY as HTTP_PROXY. Precedence is HTTPS_PROXY > HTTP_PROXY
   if (process.env.HTTPS_PROXY) process.env.HTTP_PROXY = process.env.HTTPS_PROXY;
@@ -109,15 +110,19 @@ export function exportRegion(region: string, outputEnvCredentials?: boolean) {
   }
 }
 
-// Obtains account ID from STS Client and sets it as output
-export async function exportAccountId(credentialsClient: CredentialsClient, maskAccountId?: boolean) {
-  const client = credentialsClient.stsClient;
+export async function getCallerIdentity(client: STSClient): Promise<{ Account: string; Arn: string; UserId?: string }> {
   const identity = await client.send(new GetCallerIdentityCommand({}));
-  const accountId = identity.Account;
-  const arn = identity.Arn;
-  if (!accountId || !arn) {
+  if (!identity.Account || !identity.Arn) {
     throw new Error('Could not get Account ID or ARN from STS. Did you set credentials?');
   }
+  return { Account: identity.Account, Arn: identity.Arn, UserId: identity.UserId };
+}
+
+// Obtains account ID from STS Client and sets it as output
+export async function exportAccountId(credentialsClient: CredentialsClient, maskAccountId?: boolean) {
+  const identity = await getCallerIdentity(credentialsClient.stsClient);
+  const accountId = identity.Account;
+  const arn = identity.Arn;
   if (maskAccountId) {
     core.setSecret(accountId);
     core.setSecret(arn);
