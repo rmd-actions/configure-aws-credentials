@@ -51,6 +51,28 @@ export async function run() {
     const specialCharacterWorkaround = getBooleanInput('special-characters-workaround', { required: false });
     const useExistingCredentials = core.getInput('use-existing-credentials', { required: false });
     let maxRetries = Number.parseInt(core.getInput('retry-max-attempts', { required: false })) || 12;
+    const expectedAccountIds = core
+      .getInput('allowed-account-ids', { required: false })
+      .split(',')
+      .map((s) => s.trim());
+    const forceSkipOidc = getBooleanInput('force-skip-oidc', { required: false });
+    const noProxy = core.getInput('no-proxy', { required: false });
+    const globalTimeout = Number.parseInt(core.getInput('action-timeout-s', { required: false })) || 0;
+
+    let timeoutId: NodeJS.Timeout | undefined;
+    if (globalTimeout > 0) {
+      core.info(`Setting a global timeout of ${globalTimeout} seconds for the action`);
+      timeoutId = setTimeout(() => {
+        core.setFailed(`Action timed out after ${globalTimeout} seconds`);
+        process.exit(1);
+      }, globalTimeout * 1000);
+    }
+
+    if (forceSkipOidc && roleToAssume && !AccessKeyId && !webIdentityTokenFile) {
+      throw new Error(
+        "If 'force-skip-oidc' is true and 'role-to-assume' is set, 'aws-access-key-id' or 'web-identity-token-file' must be set",
+      );
+    }
 
     if (specialCharacterWorkaround) {
       // 😳
@@ -62,6 +84,7 @@ export async function run() {
 
     // Logic to decide whether to attempt to use OIDC or not
     const useGitHubOIDCProvider = () => {
+      if (forceSkipOidc) return false;
       // The `ACTIONS_ID_TOKEN_REQUEST_TOKEN` environment variable is set when the `id-token` permission is granted.
       // This is necessary to authenticate with OIDC, but not strictly set just for OIDC. If it is not set and all other
       // checks pass, it is likely but not guaranteed that the user needs but lacks this permission in their workflow.
@@ -97,7 +120,10 @@ export async function run() {
     exportRegion(region, outputEnvCredentials);
 
     // Instantiate credentials client
-    const credentialsClient = new CredentialsClient({ region, proxyServer });
+    const clientProps: { region: string; proxyServer?: string; noProxy?: string } = { region };
+    if (proxyServer) clientProps.proxyServer = proxyServer;
+    if (noProxy) clientProps.noProxy = noProxy;
+    const credentialsClient = new CredentialsClient(clientProps);
     let sourceAccountId: string;
     let webIdentityToken: string;
 
@@ -106,6 +132,7 @@ export async function run() {
       const validCredentials = await areCredentialsValid(credentialsClient);
       if (validCredentials) {
         core.notice('Pre-existing credentials are valid. No need to generate new ones.');
+        if (timeoutId) clearTimeout(timeoutId);
         return;
       }
       core.notice('No valid credentials exist. Running as normal.');
@@ -136,7 +163,7 @@ export async function run() {
       exportCredentials({ AccessKeyId, SecretAccessKey, SessionToken }, outputCredentials, outputEnvCredentials);
     } else if (!webIdentityTokenFile && !roleChaining) {
       // Proceed only if credentials can be picked up
-      await credentialsClient.validateCredentials();
+      await credentialsClient.validateCredentials(undefined, roleChaining, expectedAccountIds);
       sourceAccountId = await exportAccountId(credentialsClient, maskAccountId);
     }
 
@@ -144,7 +171,7 @@ export async function run() {
       // Validate that the SDK can actually pick up credentials.
       // This validates cases where this action is using existing environment credentials,
       // and cases where the user intended to provide input credentials but the secrets inputs resolved to empty strings.
-      await credentialsClient.validateCredentials(AccessKeyId, roleChaining);
+      await credentialsClient.validateCredentials(AccessKeyId, roleChaining, expectedAccountIds);
       sourceAccountId = await exportAccountId(credentialsClient, maskAccountId);
     }
 
@@ -179,7 +206,11 @@ export async function run() {
       //  is set to `true` then we are NOT in a self-hosted runner.
       // Second: Customer provided credentials manually (IAM User keys stored in GH Secrets)
       if (!process.env.GITHUB_ACTIONS || AccessKeyId) {
-        await credentialsClient.validateCredentials(roleCredentials.Credentials?.AccessKeyId);
+        await credentialsClient.validateCredentials(
+          roleCredentials.Credentials?.AccessKeyId,
+          roleChaining,
+          expectedAccountIds,
+        );
       }
       if (outputEnvCredentials) {
         await exportAccountId(credentialsClient, maskAccountId);
@@ -187,11 +218,13 @@ export async function run() {
     } else {
       core.info('Proceeding with IAM user credentials');
     }
+
+    // Clear timeout on successful completion
+    if (timeoutId) clearTimeout(timeoutId);
   } catch (error) {
     core.setFailed(errorMessage(error));
 
     const showStackTrace = process.env.SHOW_STACK_TRACE;
-
     if (showStackTrace === 'true') {
       throw error;
     }
