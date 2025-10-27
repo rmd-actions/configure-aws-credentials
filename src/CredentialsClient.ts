@@ -2,14 +2,16 @@ import { info } from '@actions/core';
 import { STSClient } from '@aws-sdk/client-sts';
 import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import { NodeHttpHandler } from '@smithy/node-http-handler';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import { ProxyAgent } from 'proxy-agent';
 import { errorMessage, getCallerIdentity } from './helpers';
+import { ProxyResolver } from './ProxyResolver';
 
 const USER_AGENT = 'configure-aws-credentials-for-github-actions';
 
 export interface CredentialsClientProps {
   region?: string;
   proxyServer?: string;
+  noProxy?: string;
 }
 
 export class CredentialsClient {
@@ -18,24 +20,37 @@ export class CredentialsClient {
   private readonly requestHandler?: NodeHttpHandler;
 
   constructor(props: CredentialsClientProps) {
-    this.region = props.region;
+    if (props.region !== undefined) {
+      this.region = props.region;
+    }
     if (props.proxyServer) {
       info('Configuring proxy handler for STS client');
-      const handler = new HttpsProxyAgent(props.proxyServer);
+      const proxyOptions: { httpProxy: string; httpsProxy: string; noProxy?: string } = {
+        httpProxy: props.proxyServer,
+        httpsProxy: props.proxyServer,
+      };
+      if (props.noProxy !== undefined) {
+        proxyOptions.noProxy = props.noProxy;
+      }
+      const getProxyForUrl = new ProxyResolver(proxyOptions).getProxyForUrl;
+      const handler = new ProxyAgent({ getProxyForUrl });
       this.requestHandler = new NodeHttpHandler({
-        httpAgent: handler,
         httpsAgent: handler,
+        httpAgent: handler,
       });
     }
   }
 
   public get stsClient(): STSClient {
     if (!this._stsClient) {
-      this._stsClient = new STSClient({
-        region: this.region,
-        customUserAgent: USER_AGENT,
-        requestHandler: this.requestHandler ? this.requestHandler : undefined,
-      });
+      const config = { customUserAgent: USER_AGENT } as {
+        customUserAgent: string;
+        region?: string;
+        requestHandler?: NodeHttpHandler;
+      };
+      if (this.region !== undefined) config.region = this.region;
+      if (this.requestHandler !== undefined) config.requestHandler = this.requestHandler;
+      this._stsClient = new STSClient(config);
     }
     return this._stsClient;
   }
@@ -81,9 +96,9 @@ export class CredentialsClient {
   }
 
   private async loadCredentials() {
-    const client = new STSClient({
-      requestHandler: this.requestHandler ? this.requestHandler : undefined,
-    });
+    const config = {} as { requestHandler?: NodeHttpHandler };
+    if (this.requestHandler !== undefined) config.requestHandler = this.requestHandler;
+    const client = new STSClient(config);
     return client.config.credentials();
   }
 }

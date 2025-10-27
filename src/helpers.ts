@@ -28,6 +28,7 @@ export function translateEnvVariables() {
     'RETRY_MAX_ATTEMPTS',
     'SPECIAL_CHARACTERS_WORKAROUND',
     'USE_EXISTING_CREDENTIALS',
+    'NO_PROXY',
   ];
   // Treat HTTPS_PROXY as HTTP_PROXY. Precedence is HTTPS_PROXY > HTTP_PROXY
   if (process.env.HTTPS_PROXY) process.env.HTTP_PROXY = process.env.HTTPS_PROXY;
@@ -114,7 +115,14 @@ export async function getCallerIdentity(client: STSClient): Promise<{ Account: s
   if (!identity.Account || !identity.Arn) {
     throw new Error('Could not get Account ID or ARN from STS. Did you set credentials?');
   }
-  return { Account: identity.Account, Arn: identity.Arn, UserId: identity.UserId };
+  const result: { Account: string; Arn: string; UserId?: string } = {
+    Account: identity.Account,
+    Arn: identity.Arn,
+  };
+  if (identity.UserId !== undefined) {
+    result.UserId = identity.UserId;
+  }
+  return result;
 }
 
 // Obtains account ID from STS Client and sets it as output
@@ -184,15 +192,26 @@ export async function retryAndBackoff<T>(
     return await fn();
   } catch (err) {
     if (!isRetryable) {
+      core.debug(`retryAndBackoff: error is not retryable: ${errorMessage(err)}`);
       throw err;
     }
     // It's retryable, so sleep and retry.
-    await sleep(Math.random() * (2 ** retries * base));
-    retries += 1;
-    if (retries >= maxRetries) {
+    const delay = Math.random() * (2 ** retries * base);
+    const nextRetry = retries + 1;
+
+    core.debug(
+      `retryAndBackoff: attempt ${nextRetry} of ${maxRetries} failed: ${errorMessage(err)}. ` +
+        `Retrying after ${Math.floor(delay)}ms.`,
+    );
+
+    await sleep(delay);
+
+    if (nextRetry >= maxRetries) {
+      core.debug('retryAndBackoff: reached max retries; giving up.');
       throw err;
     }
-    return await retryAndBackoff(fn, isRetryable, maxRetries, retries, base);
+
+    return await retryAndBackoff(fn, isRetryable, maxRetries, nextRetry, base);
   }
 }
 

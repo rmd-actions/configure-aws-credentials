@@ -15,10 +15,10 @@ jobs:
       - name: Get Metadata
         id: dependabot-metadata
         uses: dependabot/fetch-metadata@v2
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         name: Clone repo
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-region: us-west-2
           role-to-assume: ${{ secrets.CONFIGUREAWSCREDENTIALSPACKAGEROLEARN }}

@@ -37,6 +37,9 @@ inputs:
   http-proxy:
     description: Proxy to use for the AWS SDK agent
     required: false
+  no-proxy:
+    description: Hosts to skip for the proxy configuration
+    required: false
   mask-aws-account-id:
     description: Whether to mask the AWS account ID for these credentials as a secret value. By default the account ID will not be masked
     required: false
@@ -86,6 +89,9 @@ inputs:
   force-skip-oidc:
     required: false
     description: When enabled, this option will skip using GitHub OIDC provider even if the id-token permission is set. This is sometimes useful when using IAM instance credentials.
+  action-timeout-s:
+    required: false
+    description: A global timeout in seconds for the action. When the timeout is reached, the action immediately exits. The default is to run without a timeout.
 
 outputs:
   aws-account-id:
