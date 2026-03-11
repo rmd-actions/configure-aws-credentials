@@ -141,6 +141,7 @@ See [action.yml](./action.yml) for more detail.
 | role-external-id          | The external ID of the role to assume. Only needed if your role requires it.                      |    No    |
 | role-session-name         | Defaults to "GitHubActions", but may be changed if required.                                      |    No    |
 | role-skip-session-tagging | Skips session tagging if set.                                                                     |    No    |
+| transitive-tag-keys       | Define a list of transitive tag keys to pass when assuming a role.                                |    No    |
 | inline-session-policy     | You may further restrict the assumed role policy by defining an inline policy here.               |    No    |
 | managed-session-policies  | You may further restrict the assumed role policy by specifying a managed policy here.             |    No    |
 | output-credentials        | When set, outputs fetched credentials as action step output. (Outputs aws-access-key-id, aws-secret-access-key, aws-session-token, aws-account-id, authenticated-arn, and aws-expiration). Defaults to false.                   |    No    |
@@ -181,7 +182,7 @@ this action will always consider the `HTTP_PROXY` environment variable.
 
 Manually configured proxy:
 ```yaml
-uses: aws-actions/configure-aws-credentials@v5.1.1
+uses: aws-actions/configure-aws-credentials@v6.0.0
 with:
   aws-region: us-east-2
   role-to-assume: my-github-actions-role
@@ -217,7 +218,7 @@ run.*
 
 The session will be tagged with the
 following tags: (Refer to [GitHub's documentation for `GITHUB_` environment
-variable definitions](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/using-environment-variables#default-environment-variables))
+variable definitions](https://docs.github.com/en/actions/reference/workflows-and-actions/variables#default-environment-variables))
 
 | Key        | Value             |
 | ---------- | ----------------- |
@@ -237,6 +238,20 @@ will be replaced with an '*'._
 
 The action will use session tagging by default unless you are using OIDC.
 
+To [forward session tags to subsequent sessions in a role chain](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html#id_session-tags_role-chaining), 
+you can use the `transitive-tag-keys` input to specify the keys of the tags to be passed.
+
+_Note that all subsequent roles in the chain must have `role-skip-session-tagging` set to `true`_
+```yaml
+      uses: aws-actions/configure-aws-credentials@v6
+      with:
+        transitive-tag-keys: |
+          Repository
+          Workflow
+          Action
+          Actor
+```
+
 ### Session policies
 Session policies are not required, but they allow you to limit the scope of the
 fetched credentials without making changes to IAM roles. You can specify inline
@@ -252,13 +267,13 @@ line.
 <summary>Inline session policy examples</summary>
 
 ```yaml
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
          inline-session-policy: '{"Version":"2012-10-17","Statement":[{"Sid":"Stmt1","Effect":"Allow","Action":"s3:List*","Resource":"*"}]}'
 ```
 Or we can have a nicely formatted JSON as well:
 ```yaml
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
          inline-session-policy: >-
           {
@@ -284,13 +299,13 @@ the role.
 <summary>Managed session policy examples</summary>
 
 ```yaml
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
          managed-session-policies: arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
 ```
 And we can pass multiple managed policies likes this:
 ```yaml
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
          managed-session-policies: |
           arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
@@ -328,7 +343,7 @@ You can specify the audience through the `audience` input:
 
 ```yaml
     - name: Configure AWS Credentials for China region audience
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
         audience: sts.amazonaws.com.cn
         aws-region: cn-northwest-1
@@ -402,7 +417,7 @@ Examples
 ### AssumeRoleWithWebIdentity
 ```yaml
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
         aws-region: us-east-2
         role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
@@ -416,13 +431,13 @@ environment variable and use it to assume the role
 ### AssumeRole with role previously assumed by action in same workflow
 ```yaml
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
         aws-region: us-east-2
         role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
         role-session-name: MySessionName
     - name: Configure other AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
         aws-region: us-east-2
         role-to-assume: arn:aws:iam::987654321000:role/my-second-role
@@ -439,7 +454,7 @@ Note that the trust relationship/trust policy of the second role must grant the 
 ### AssumeRole with static IAM credentials in repository secrets
 ```yaml
     - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -458,7 +473,7 @@ name, like `role-to-assume: my-github-actions-role`.
 ```yaml
     - name: Configure AWS Credentials 1
       id: creds
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
         aws-region: us-east-2
         role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
@@ -467,7 +482,7 @@ name, like `role-to-assume: my-github-actions-role`.
       run: |
         aws sts get-caller-identity
     - name: Configure AWS Credentials 2
-      uses: aws-actions/configure-aws-credentials@v5.1.1
+      uses: aws-actions/configure-aws-credentials@v6.0.0
       with:
         aws-region: us-east-2
         aws-access-key-id: ${{ steps.creds.outputs.aws-access-key-id }}
