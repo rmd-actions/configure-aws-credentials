@@ -21418,7 +21418,7 @@ var require_core = __commonJS({
     exports2.exportVariable = exportVariable3;
     exports2.setSecret = setSecret2;
     exports2.addPath = addPath;
-    exports2.getInput = getInput2;
+    exports2.getInput = getInput3;
     exports2.getMultilineInput = getMultilineInput;
     exports2.getBooleanInput = getBooleanInput2;
     exports2.setOutput = setOutput2;
@@ -21468,7 +21468,7 @@ var require_core = __commonJS({
       }
       process.env["PATH"] = `${inputPath}${path.delimiter}${process.env["PATH"]}`;
     }
-    function getInput2(name, options) {
+    function getInput3(name, options) {
       const val = process.env[`INPUT_${name.replace(/ /g, "_").toUpperCase()}`] || "";
       if (options && options.required && !val) {
         throw new Error(`Input required and not supplied: ${name}`);
@@ -21479,7 +21479,7 @@ var require_core = __commonJS({
       return val.trim();
     }
     function getMultilineInput(name, options) {
-      const inputs = getInput2(name, options).split("\n").filter((x) => x !== "");
+      const inputs = getInput3(name, options).split("\n").filter((x) => x !== "");
       if (options && options.trimWhitespace === false) {
         return inputs;
       }
@@ -21488,7 +21488,7 @@ var require_core = __commonJS({
     function getBooleanInput2(name, options) {
       const trueValue = ["true", "True", "TRUE"];
       const falseValue = ["false", "False", "FALSE"];
-      const val = getInput2(name, options);
+      const val = getInput3(name, options);
       if (trueValue.includes(val))
         return true;
       if (falseValue.includes(val))
@@ -21614,13 +21614,17 @@ Support boolean input list: \`true | True | TRUE | false | False | FALSE\``
 
 // src/cleanup/index.ts
 function cleanup() {
-  if (getBooleanInput("output-env-credentials", { required: false, default: true })) {
+  const awsProfile = core2.getInput("aws-profile", { required: false });
+  if (getBooleanInput("output-env-credentials", { required: false, default: !awsProfile })) {
     try {
       core2.exportVariable("AWS_ACCESS_KEY_ID", "");
       core2.exportVariable("AWS_SECRET_ACCESS_KEY", "");
       core2.exportVariable("AWS_SESSION_TOKEN", "");
       core2.exportVariable("AWS_DEFAULT_REGION", "");
       core2.exportVariable("AWS_REGION", "");
+      if (core2.getInput("aws-profile")) {
+        core2.exportVariable("AWS_PROFILE", "");
+      }
     } catch (error) {
       core2.setFailed(errorMessage(error));
     }
