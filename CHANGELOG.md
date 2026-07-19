@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.2.2](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.1...v6.2.2) (2026-07-07)
+
+
+### Miscellaneous Chores
+
+* release 6.2.2 ([d01d678](https://github.com/aws-actions/configure-aws-credentials/commit/d01d678e65d6d2bd9d5ca7a95d6f07b00e25f2c2))
+
+## [6.2.1](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.0...v6.2.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* enforce allowed-account-ids on all auth paths ([#1847](https://github.com/aws-actions/configure-aws-credentials/issues/1847)) ([4d281fb](https://github.com/aws-actions/configure-aws-credentials/commit/4d281fbc56a82e63c3fc14f2cc22361f34c97493))
+
+## [6.2.0](https://github.com/aws-actions/configure-aws-credentials/compare/v6.1.3...v6.2.0) (2026-06-01)
+
+### Features
+
+* add additional session tags by default ([#1775](https://github.com/aws-actions/configure-aws-credentials/issues/1775)) ([e0ba768](https://github.com/aws-actions/configure-aws-credentials/commit/e0ba7685077379a14a82d01fefd511490344ebfc))
+* add more retry logic and better logging ([#1764](https://github.com/aws-actions/configure-aws-credentials/issues/1764)) ([540d0c1](https://github.com/aws-actions/configure-aws-credentials/commit/540d0c13aedb8d55501d220bd2f0b3cdedfe84e8))
+* add regex validation to role-session-name ([#1765](https://github.com/aws-actions/configure-aws-credentials/issues/1765)) ([e354499](https://github.com/aws-actions/configure-aws-credentials/commit/e35449909c6ede5083a48ba4b8bbfaaa1cf09ba1))
+* Allow custom session tags to be passed when assuming a role ([#1759](https://github.com/aws-actions/configure-aws-credentials/issues/1759)) ([61f50f6](https://github.com/aws-actions/configure-aws-credentials/commit/61f50f630f383628add73c1eab3f1935ba07da2b))
+* expose run id in STS client user-agent ([#1774](https://github.com/aws-actions/configure-aws-credentials/issues/1774)) ([29d1be3](https://github.com/aws-actions/configure-aws-credentials/commit/29d1be30273e7ef371d59fccf6ec54572c64ec89))
+* support custom STS endpoints ([#1762](https://github.com/aws-actions/configure-aws-credentials/issues/1762)) ([8d52d05](https://github.com/aws-actions/configure-aws-credentials/commit/8d52d05d7a4521fa52b39de50cb6114b12e5c332))
+
+### Bug Fixes
+
+* skip credential check on output-env-credentials: false ([#1778](https://github.com/aws-actions/configure-aws-credentials/issues/1778)) ([58e7c47](https://github.com/aws-actions/configure-aws-credentials/commit/58e7c47adf77846879008deadfeeef8a6969fe6c))
+* assumeRole failing from session tag size too large ([#1808](https://github.com/aws-actions/configure-aws-credentials/issues/1808)) ([d6f5dc3](https://github.com/aws-actions/configure-aws-credentials/commit/d6f5dc331b44474b19a52caaf85fa4d637b13c8e))
+
+## [6.1.3](https://github.com/aws-actions/configure-aws-credentials/compare/v6.1.2...v6.1.3) (2026-05-28)
+
+### Bug Fixes
+
+* fix: allow kubelet token symlink in [#1805](https://github.com/aws-actions/configure-aws-credentials/issues/1805)
+
+## [6.1.2](https://github.com/aws-actions/configure-aws-credentials/compare/v6.1.1...v6.1.2) (2026-05-26)
+
+### Bug Fixes
+
+* additional filesystem checks ([#1799](https://github.com/aws-actions/configure-aws-credentials/issues/1799)) ([c39f282](https://github.com/aws-actions/configure-aws-credentials/commit/c39f282697aca8a78c522ecf1f7da9899a31432c))
+
 ## [6.1.1](https://github.com/aws-actions/configure-aws-credentials/compare/v6.1.0...v6.1.1) (2026-05-05)
 
 

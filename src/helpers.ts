@@ -1,6 +1,9 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as core from '@actions/core';
 import type { Credentials, STSClient } from '@aws-sdk/client-sts';
 import { GetCallerIdentityCommand } from '@aws-sdk/client-sts';
+import type { AwsCredentialIdentity } from '@aws-sdk/types';
 import type { UserAgent } from '@smithy/types';
 import type { CredentialsClient } from './CredentialsClient';
 
@@ -148,9 +151,8 @@ export async function getCallerIdentity(client: STSClient): Promise<{ Account: s
   return result;
 }
 
-// Obtains account ID from STS Client and sets it as output
-export async function exportAccountId(credentialsClient: CredentialsClient, maskAccountId?: boolean) {
-  const identity = await getCallerIdentity(credentialsClient.stsClient);
+// Emits the account ID and ARN of an already-resolved caller identity as action outputs.
+export function exportAccountId(identity: { Account: string; Arn: string }, maskAccountId?: boolean) {
   const accountId = identity.Account;
   const arn = identity.Arn;
   if (maskAccountId) {
@@ -160,6 +162,35 @@ export async function exportAccountId(credentialsClient: CredentialsClient, mask
   core.setOutput('aws-account-id', accountId);
   core.setOutput('authenticated-arn', arn);
   return accountId;
+}
+
+// Validates that the account of the already-resolved caller identity is in the allow-list provided via the
+// `allowed-account-ids` input.
+export function validateAccountId(expectedAccountIds: string[] | undefined, account: string | undefined): void {
+  if (!expectedAccountIds || expectedAccountIds.length === 0 || expectedAccountIds[0] === '') {
+    return;
+  }
+  if (!account || !expectedAccountIds.includes(account)) {
+    throw new Error(
+      `The account ID of the provided credentials (${
+        account ?? 'unknown'
+      }) does not match any of the expected account IDs: ${expectedAccountIds.join(', ')}`,
+    );
+  }
+}
+
+// Converts the STS Credentials shape (returned by AssumeRole and provided as action inputs) into
+// the AwsCredentialIdentity shape the SDK expects when credentials are supplied explicitly to a
+// client. Returns undefined if the access key ID or secret access key is missing.
+export function toCredentialIdentity(creds?: Partial<Credentials>): AwsCredentialIdentity | undefined {
+  if (!creds?.AccessKeyId || !creds.SecretAccessKey) {
+    return undefined;
+  }
+  return {
+    accessKeyId: creds.AccessKeyId,
+    secretAccessKey: creds.SecretAccessKey,
+    ...(creds.SessionToken && { sessionToken: creds.SessionToken }),
+  };
 }
 
 // Tags have a more restrictive set of acceptable characters than GitHub environment variables can.
@@ -290,4 +321,107 @@ export function getBooleanInput(name: string, options?: core.InputOptions & { de
     `Input does not meet YAML 1.2 "Core Schema" specification: ${name}\n` +
       `Support boolean input list: \`true | True | TRUE | false | False | FALSE\``,
   );
+}
+
+// O_NOFOLLOW is undefined on Windows. This sets it to 0 if it's not defined.
+const O_NOFOLLOW: number = (fs.constants as { O_NOFOLLOW?: number }).O_NOFOLLOW ?? 0;
+
+export function isAllowListed(filePath: string): boolean {
+  // Kubelet projects service-account tokens through a symlink chain
+  // (token -> ..data/token, ..data -> ..<timestamp>/). The containing path is
+  // kubelet-controlled, so we allow symlink-following reads of this fixed
+  // location only.
+  const KUBERNETES_TOKEN_PATH_REGEX = /^\/var\/run\/secrets\/[^/]+\/serviceaccount\/token$/;
+
+  if (process.platform !== 'win32') {
+    // No Kubernetes token paths on Windows
+    return KUBERNETES_TOKEN_PATH_REGEX.test(path.posix.normalize(filePath));
+  }
+  return false;
+}
+
+export function isSymlink(filePath: string): boolean {
+  try {
+    return fs.lstatSync(filePath).isSymbolicLink();
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw err;
+  }
+}
+
+// Refuses if filePath or its parent directory is a symbolic link.
+function refuseSymlinkOnPath(filePath: string): void {
+  const parent = path.dirname(filePath);
+  if (parent !== filePath && isSymlink(parent)) {
+    throw new Error(`Refusing ${filePath} (parent directory is a symbolic link)`);
+  }
+  if (isSymlink(filePath)) {
+    throw new Error(`Refusing ${filePath} (path is a symbolic link)`);
+  }
+}
+
+function assertRegularFile(fd: number, filePath: string): void {
+  const stats = fs.fstatSync(fd);
+  if (!stats.isFile()) {
+    throw new Error(`${filePath} (path is not a regular file)`);
+  }
+}
+
+// ENOENT: file does not exist
+// ELOOP: too many symbolic links (from NOFOLLOW)
+
+export function readFileUtf8(filePath: string): string | null {
+  const allowSymlink = isAllowListed(filePath);
+  if (!allowSymlink) {
+    refuseSymlinkOnPath(filePath);
+  }
+  const openFlags = fs.constants.O_RDONLY | (allowSymlink ? 0 : O_NOFOLLOW);
+  let fd: number;
+  try {
+    fd = fs.openSync(filePath, openFlags);
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') return null;
+    if (code === 'ELOOP') {
+      throw new Error(`Refusing ${filePath} (path is a symbolic link)`);
+    }
+    throw err;
+  }
+  try {
+    assertRegularFile(fd, filePath);
+    return fs.readFileSync(fd, 'utf-8');
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+export function writeFileUtf8(filePath: string, content: string, mode = 0o600): void {
+  refuseSymlinkOnPath(filePath);
+  let fd: number;
+  try {
+    fd = fs.openSync(filePath, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_TRUNC | O_NOFOLLOW, mode);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ELOOP') {
+      throw new Error(`Refusing ${filePath} (path is a symbolic link)`);
+    }
+    throw err;
+  }
+  try {
+    assertRegularFile(fd, filePath);
+    // openSync only applies mode on creation.
+    // If the file already exists, we need to ensure the mode is correct.
+    if (process.platform !== 'win32') {
+      fs.fchmodSync(fd, mode);
+    }
+    fs.writeFileSync(fd, content);
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+export function mkdir(dir: string, mode = 0o700): void {
+  fs.mkdirSync(dir, { recursive: true, mode });
+  if (isSymlink(dir)) {
+    throw new Error(`Refusing ${dir} (path is a symbolic link)`);
+  }
 }

@@ -3,6 +3,7 @@ import {
   AssumeRoleCommand,
   AssumeRoleWithWebIdentityCommand,
   GetCallerIdentityCommand,
+  PackedPolicyTooLargeException,
   STSClient,
 } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -202,6 +203,18 @@ describe('Configure AWS Credentials', {}, () => {
       expect(core.setOutput).toHaveBeenCalledTimes(2);
       expect(core.setFailed).not.toHaveBeenCalled();
     });
+    it('does not send Tags or TransitiveTagKeys to AssumeRoleWithWebIdentity', async () => {
+      // AssumeRoleWithWebIdentity reads session tags from JWT claims, not the request.
+      // Both fields must be stripped before the STS call.
+      vi.mocked(core.getMultilineInput).mockImplementation((name: string) => {
+        if (name === 'transitive-tag-keys') return ['Repository'];
+        return [];
+      });
+      await run();
+      const callInput = mockedSTSClient.commandCalls(AssumeRoleWithWebIdentityCommand)[0].args[0].input;
+      expect(callInput.Tags).toBeUndefined();
+      expect(callInput.TransitiveTagKeys).toBeUndefined();
+    });
   });
 
   describe('Assume existing role', {}, () => {
@@ -282,9 +295,9 @@ describe('Configure AWS Credentials', {}, () => {
       await run();
       const tags = mockedSTSClient.commandCalls(AssumeRoleCommand)[0].args[0].input.Tags ?? [];
       // 7 protected (GitHub + Repository, Workflow, Action, Actor, Commit, Branch)
-      // + 8 overrideable (EventName, BaseRef, HeadRef, RefName, RunId, RefType, Job, TriggeringActor).
-      // No custom-tags, all env vars set in mocks.envs → all 15 should be present, nothing else.
-      expect(tags).toHaveLength(15);
+      // + 6 droppable (EventName, BaseRef, HeadRef, RunId, Job, TriggeringActor).
+      // No custom-tags, all env vars set in mocks.envs → all 13 should be present, nothing else.
+      expect(tags).toHaveLength(13);
       const tagsByKey = Object.fromEntries(tags.map((t) => [t.Key, t.Value]));
       expect(tagsByKey).toEqual({
         GitHub: 'Actions',
@@ -297,14 +310,12 @@ describe('Configure AWS Credentials', {}, () => {
         EventName: 'pull_request',
         BaseRef: 'main',
         HeadRef: 'feature-branch',
-        RefName: 'feature-branch',
         RunId: '16412345678',
-        RefType: 'branch',
         Job: 'build',
         TriggeringActor: 'MY-USERNAME_bot_',
       });
     });
-    it('omits overrideable tags whose env vars are unset', {}, async () => {
+    it('omits droppable tags whose env vars are unset', {}, async () => {
       vi.mocked(core.getInput).mockImplementation(mocks.getInput(mocks.IAM_ASSUMEROLE_INPUTS));
       delete process.env.GITHUB_BASE_REF;
       delete process.env.GITHUB_HEAD_REF;
@@ -317,6 +328,27 @@ describe('Configure AWS Credentials', {}, () => {
       expect(tagKeys).not.toContain('TriggeringActor');
       expect(tagKeys).toContain('EventName');
       expect(tagKeys).toContain('RunId');
+    });
+    it('drops droppable tags and retries on PackedPolicyTooLargeException', {}, async () => {
+      vi.mocked(core.getInput).mockImplementation(mocks.getInput(mocks.IAM_ASSUMEROLE_INPUTS));
+      mockedSTSClient
+        .on(AssumeRoleCommand)
+        .rejectsOnce(new PackedPolicyTooLargeException({ message: 'too large', $metadata: {} }))
+        .resolvesOnce(mocks.outputs.STS_CREDENTIALS);
+      await run();
+      expect(core.info).toHaveBeenCalledWith('Session tag size is too large; dropping droppable tags and retrying.');
+      const retryInput = mockedSTSClient.commandCalls(AssumeRoleCommand)[1].args[0].input;
+      const retryTagKeys = (retryInput.Tags ?? []).map((t) => t.Key);
+      expect(retryTagKeys).not.toContain('EventName');
+      expect(retryTagKeys).not.toContain('BaseRef');
+      expect(retryTagKeys).not.toContain('HeadRef');
+      expect(retryTagKeys).not.toContain('RunId');
+      expect(retryTagKeys).not.toContain('Job');
+      expect(retryTagKeys).not.toContain('TriggeringActor');
+      // Protected tags remain
+      expect(retryTagKeys).toContain('GitHub');
+      expect(retryTagKeys).toContain('Repository');
+      expect(core.setFailed).not.toHaveBeenCalled();
     });
     it('sanitizes invalid characters in env-derived tag values', {}, async () => {
       vi.mocked(core.getInput).mockImplementation(mocks.getInput(mocks.IAM_ASSUMEROLE_INPUTS));
@@ -370,8 +402,6 @@ describe('Configure AWS Credentials', {}, () => {
           { Key: 'EventName', Value: 'pull_request' },
           { Key: 'RunId', Value: '16412345678' },
           { Key: 'Job', Value: 'build' },
-          { Key: 'RefName', Value: 'feature-branch' },
-          { Key: 'RefType', Value: 'branch' },
           { Key: 'TriggeringActor', Value: 'MY-USERNAME_bot_' },
           { Key: 'Environment', Value: 'Production' },
           { Key: 'Team', Value: 'DevOps' },
@@ -420,7 +450,7 @@ describe('Configure AWS Credentials', {}, () => {
       await run();
       expect(core.warning).toHaveBeenCalledWith(expect.stringContaining("'custom-tags' is set but will be ignored"));
     });
-    it('lets custom tags override overrideable default tag keys', {}, async () => {
+    it('rejects custom tags that conflict with droppable tag keys', {}, async () => {
       vi.mocked(core.getInput).mockImplementation(
         mocks.getInput({
           ...mocks.IAM_ASSUMEROLE_INPUTS,
@@ -428,13 +458,10 @@ describe('Configure AWS Credentials', {}, () => {
         }),
       );
       await run();
-      const tags = mockedSTSClient.commandCalls(AssumeRoleCommand)[0].args[0].input.Tags ?? [];
-      const eventNameTags = tags.filter((t) => t.Key === 'EventName');
-      const baseRefTags = tags.filter((t) => t.Key === 'BaseRef');
-      expect(eventNameTags).toHaveLength(1);
-      expect(eventNameTags[0]?.Value).toBe('workflow_dispatch');
-      expect(baseRefTags).toHaveLength(1);
-      expect(baseRefTags[0]?.Value).toBe('release/2026');
+      expect(core.setFailed).toHaveBeenCalledWith(
+        "custom-tags: key 'EventName' conflicts with a protected session tag set by this action and cannot be overridden",
+      );
+      expect(mockedSTSClient.commandCalls(AssumeRoleCommand)).toHaveLength(0);
     });
     it('rejects custom tags that conflict with the protected Branch tag', {}, async () => {
       // Regression guard: Branch was a default before v6.2 and must remain unoverridable.
@@ -450,62 +477,10 @@ describe('Configure AWS Credentials', {}, () => {
       );
       expect(mockedSTSClient.commandCalls(AssumeRoleCommand)).toHaveLength(0);
     });
-    it('drops lower-priority overrideable tags when custom-tags would exceed the session-tag limit', {}, async () => {
-      // 7 protected (GitHub + 6 from PROTECTED_TAG_SOURCES) + 40 custom = 47 used → 3 overrideable slots.
-      // The first 3 overrideable tags by priority are EventName, BaseRef, HeadRef (RefName, RunId, RefType,
-      // Job, TriggeringActor must be dropped).
+    it('rejects custom-tags that would exceed the session-tag limit', {}, async () => {
+      // 13 existing tags (7 non-droppable + 6 droppable) + 38 custom = 51 > 50.
       const customTagsObj: Record<string, string> = {};
-      for (let i = 0; i < 40; i++) {
-        customTagsObj[`Custom${i}`] = `value${i}`;
-      }
-      vi.mocked(core.getInput).mockImplementation(
-        mocks.getInput({
-          ...mocks.IAM_ASSUMEROLE_INPUTS,
-          'custom-tags': JSON.stringify(customTagsObj),
-        }),
-      );
-      await run();
-      const tags = mockedSTSClient.commandCalls(AssumeRoleCommand)[0].args[0].input.Tags ?? [];
-      const tagKeys = tags.map((t) => t.Key);
-      expect(tags).toHaveLength(50);
-      expect(tagKeys).toContain('Branch');
-      expect(tagKeys).toContain('EventName');
-      expect(tagKeys).toContain('BaseRef');
-      expect(tagKeys).toContain('HeadRef');
-      expect(tagKeys).not.toContain('RefName');
-      expect(tagKeys).not.toContain('RunId');
-      expect(tagKeys).not.toContain('RefType');
-      expect(tagKeys).not.toContain('Job');
-      expect(tagKeys).not.toContain('TriggeringActor');
-    });
-    it('overridden overrideable tags free a slot for a lower-priority overrideable tag', {}, async () => {
-      // Same 40-custom-tag scenario as above, but one of the customs overrides BaseRef.
-      // BaseRef no longer competes for the overrideable budget, so the next-priority overrideable (RefName) gets in.
-      const customTagsObj: Record<string, string> = { BaseRef: 'release/2026' };
-      for (let i = 0; i < 39; i++) {
-        customTagsObj[`Custom${i}`] = `value${i}`;
-      }
-      vi.mocked(core.getInput).mockImplementation(
-        mocks.getInput({
-          ...mocks.IAM_ASSUMEROLE_INPUTS,
-          'custom-tags': JSON.stringify(customTagsObj),
-        }),
-      );
-      await run();
-      const tags = mockedSTSClient.commandCalls(AssumeRoleCommand)[0].args[0].input.Tags ?? [];
-      const tagKeys = tags.map((t) => t.Key);
-      expect(tags).toHaveLength(50);
-      expect(tagKeys).toContain('Branch');
-      expect(tagKeys).toContain('EventName');
-      expect(tagKeys).toContain('BaseRef');
-      expect(tagKeys).toContain('HeadRef');
-      expect(tagKeys).toContain('RefName');
-      expect(tagKeys).not.toContain('RunId');
-    });
-    it('rejects custom-tags that would exceed the session-tag limit on their own', {}, async () => {
-      // 7 protected + 44 custom = 51, which is over 50 even with zero overrideable tags.
-      const customTagsObj: Record<string, string> = {};
-      for (let i = 0; i < 44; i++) {
+      for (let i = 0; i < 38; i++) {
         customTagsObj[`Custom${i}`] = `value${i}`;
       }
       vi.mocked(core.getInput).mockImplementation(
@@ -518,12 +493,10 @@ describe('Configure AWS Credentials', {}, () => {
       expect(core.setFailed).toHaveBeenCalledWith(expect.stringContaining('would exceed the AWS limit of 50'));
       expect(mockedSTSClient.commandCalls(AssumeRoleCommand)).toHaveLength(0);
     });
-    it('drops transitive-tag-keys entries that refer to evicted overrideable tags', {}, async () => {
-      // Force eviction of all overrideable tags below EventName/BaseRef/HeadRef. The user transitive-tags
-      // RunId (which gets evicted) and Repository (which is protected and stays). The TransitiveTagKeys
-      // payload must include only the keys that actually appear in Tags.
+    it('allows custom-tags up to the session-tag limit', {}, async () => {
+      // 13 existing tags + 37 custom = 50, exactly at the limit.
       const customTagsObj: Record<string, string> = {};
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 37; i++) {
         customTagsObj[`Custom${i}`] = `value${i}`;
       }
       vi.mocked(core.getInput).mockImplementation(
@@ -532,15 +505,10 @@ describe('Configure AWS Credentials', {}, () => {
           'custom-tags': JSON.stringify(customTagsObj),
         }),
       );
-      vi.mocked(core.getMultilineInput).mockImplementation((name: string) => {
-        if (name === 'transitive-tag-keys') return ['Repository', 'RunId'];
-        return [];
-      });
       await run();
-      const callInput = mockedSTSClient.commandCalls(AssumeRoleCommand)[0].args[0].input;
-      const tagKeys = (callInput.Tags ?? []).map((t) => t.Key);
-      expect(tagKeys).not.toContain('RunId');
-      expect(callInput.TransitiveTagKeys).toEqual(['Repository']);
+      expect(core.setFailed).not.toHaveBeenCalled();
+      const tags = mockedSTSClient.commandCalls(AssumeRoleCommand)[0].args[0].input.Tags ?? [];
+      expect(tags).toHaveLength(50);
     });
   });
 
@@ -650,6 +618,9 @@ describe('Configure AWS Credentials', {}, () => {
     });
     it("doesn't export credentials as environment variables if told not to", {}, async () => {
       mockedSTSClient.on(AssumeRoleWithWebIdentityCommand).resolvesOnce(mocks.outputs.STS_CREDENTIALS);
+      // Credentials are validated (and their account resolved) even when not exported to the
+      // environment, so GetCallerIdentity is now called on the explicit assumed-role credentials.
+      mockedSTSClient.on(GetCallerIdentityCommand).resolves({ ...mocks.outputs.GET_CALLER_IDENTITY });
       vi.mocked(core.getInput).mockImplementation(mocks.getInput(mocks.NO_ENV_CREDS_INPUTS));
       vi.mocked(core.getIDToken).mockResolvedValue('testoidctoken');
       process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN = 'fake-token';
@@ -660,6 +631,7 @@ describe('Configure AWS Credentials', {}, () => {
     });
     it('can export creds as step outputs without exporting as env variables', {}, async () => {
       mockedSTSClient.on(AssumeRoleWithWebIdentityCommand).resolvesOnce(mocks.outputs.STS_CREDENTIALS);
+      mockedSTSClient.on(GetCallerIdentityCommand).resolves({ ...mocks.outputs.GET_CALLER_IDENTITY });
       vi.mocked(core.getInput).mockImplementation(mocks.getInput(mocks.STEP_BUT_NO_ENV_INPUTS));
       vi.mocked(core.getIDToken).mockResolvedValue('testoidctoken');
       process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN = 'fake-token';
@@ -929,6 +901,65 @@ describe('Configure AWS Credentials', {}, () => {
       expect(core.info).toHaveBeenCalledWith('Authenticated as assumedRoleId AROAFAKEASSUMEDROLEID');
     });
 
+    it('fails with OIDC when account ID does not match allowed list', async () => {
+      // Regression test for the allowed-account-ids bypass: in a real runner (GITHUB_ACTIONS=true)
+      // authenticating via OIDC, the account-ID guardrail was previously never enforced.
+      vi.mocked(core.getInput).mockImplementation(
+        mocks.getInput({
+          ...mocks.GH_OIDC_INPUTS,
+          'allowed-account-ids': '999999999999',
+        }),
+      );
+      vi.mocked(core.getIDToken).mockResolvedValue('testoidctoken');
+      mockedSTSClient.on(AssumeRoleWithWebIdentityCommand).resolves(mocks.outputs.STS_CREDENTIALS);
+      mockedSTSClient.on(GetCallerIdentityCommand).resolves({ ...mocks.outputs.GET_CALLER_IDENTITY });
+      process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN = 'fake-token';
+
+      await run();
+      expect(core.setFailed).toHaveBeenCalledWith(
+        'The account ID of the provided credentials (111111111111) does not match any of the expected account IDs: 999999999999',
+      );
+    });
+
+    it('fails with OIDC and output-env-credentials false when account ID does not match', async () => {
+      // The guardrail must hold even when credentials are never written to the environment.
+      vi.mocked(core.getInput).mockImplementation(
+        mocks.getInput({
+          ...mocks.NO_ENV_CREDS_INPUTS,
+          'allowed-account-ids': '999999999999',
+        }),
+      );
+      vi.mocked(core.getIDToken).mockResolvedValue('testoidctoken');
+      mockedSTSClient.on(AssumeRoleWithWebIdentityCommand).resolves(mocks.outputs.STS_CREDENTIALS);
+      mockedSTSClient.on(GetCallerIdentityCommand).resolves({ ...mocks.outputs.GET_CALLER_IDENTITY });
+      process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN = 'fake-token';
+
+      await run();
+      expect(core.setFailed).toHaveBeenCalledWith(
+        'The account ID of the provided credentials (111111111111) does not match any of the expected account IDs: 999999999999',
+      );
+    });
+
+    it('fails with assume role when assumed account ID does not match allowed list', async () => {
+      vi.mocked(core.getInput).mockImplementation(
+        mocks.getInput({
+          ...mocks.IAM_ASSUMEROLE_INPUTS,
+          'allowed-account-ids': '999999999999',
+        }),
+      );
+      mockedSTSClient.on(AssumeRoleCommand).resolves(mocks.outputs.STS_CREDENTIALS);
+      mockedSTSClient.on(GetCallerIdentityCommand).resolves({ ...mocks.outputs.GET_CALLER_IDENTITY });
+      // biome-ignore lint/suspicious/noExplicitAny: any required to mock private method
+      vi.spyOn(CredentialsClient.prototype as any, 'loadCredentials')
+        .mockResolvedValueOnce({ accessKeyId: 'MYAWSACCESSKEYID' })
+        .mockResolvedValueOnce({ accessKeyId: 'STSAWSACCESSKEYID' });
+
+      await run();
+      expect(core.setFailed).toHaveBeenCalledWith(
+        'The account ID of the provided credentials (111111111111) does not match any of the expected account IDs: 999999999999',
+      );
+    });
+
     it('handles GetCallerIdentity API failure gracefully', async () => {
       vi.mocked(core.getInput).mockImplementation(
         mocks.getInput({
@@ -943,7 +974,11 @@ describe('Configure AWS Credentials', {}, () => {
       });
 
       await run();
-      expect(core.setFailed).toHaveBeenCalledWith('Could not validate account ID of credentials: API Error');
+      // The account allow-list now reuses the single liveness GetCallerIdentity call, so an STS
+      // failure surfaces as a credential-loading failure rather than a dedicated account-check error.
+      expect(core.setFailed).toHaveBeenCalledWith(
+        'Credentials could not be loaded, please check your action inputs: API Error',
+      );
     });
 
     it('ignores validation when allowed-account-ids is empty', async () => {
@@ -1405,7 +1440,7 @@ describe('Configure AWS Credentials', {}, () => {
   });
 
   describe('Retry Behavior', {}, () => {
-    it('retries exportAccountId on transient GetCallerIdentity failure', async () => {
+    it('retries validateCredentials on transient GetCallerIdentity failure', async () => {
       vi.mocked(core.getInput).mockImplementation(mocks.getInput(mocks.IAM_USER_INPUTS));
       // biome-ignore lint/suspicious/noExplicitAny: any required to mock private method
       vi.spyOn(CredentialsClient.prototype as any, 'loadCredentials').mockResolvedValue({
@@ -1416,7 +1451,9 @@ describe('Configure AWS Credentials', {}, () => {
         .rejectsOnce(new Error('throttled'))
         .resolves({ ...mocks.outputs.GET_CALLER_IDENTITY });
       await run();
-      expect(core.info).toHaveBeenCalledWith(expect.stringContaining('Retry exportAccountId'));
+      // The single liveness GetCallerIdentity call lives in validateCredentials, so transient STS
+      // failures are retried under that label (the account ID is then resolved without a second call).
+      expect(core.info).toHaveBeenCalledWith(expect.stringContaining('Retry validateCredentials'));
       expect(core.setFailed).not.toHaveBeenCalled();
     });
 
@@ -1446,7 +1483,7 @@ describe('Configure AWS Credentials', {}, () => {
       expect(core.info).not.toHaveBeenCalledWith(expect.stringContaining('Retry'));
     });
 
-    it('retries exportAccountId after role assumption (issue #1681)', async () => {
+    it('retries the post-assume identity check on a transient invalid-token error (issue #1681)', async () => {
       vi.mocked(core.getInput).mockImplementation(mocks.getInput(mocks.GH_OIDC_INPUTS));
       vi.mocked(core.getIDToken).mockResolvedValue('testoidctoken');
       mockedSTSClient.on(AssumeRoleWithWebIdentityCommand).resolves(mocks.outputs.STS_CREDENTIALS);
@@ -1456,7 +1493,9 @@ describe('Configure AWS Credentials', {}, () => {
         .resolves({ ...mocks.outputs.GET_CALLER_IDENTITY });
       process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN = 'fake-token';
       await run();
-      expect(core.info).toHaveBeenCalledWith(expect.stringContaining('Retry exportAccountId'));
+      // Freshly-assumed credentials can be briefly rejected by STS (eventual consistency). The
+      // liveness GetCallerIdentity now runs inside validateCredentials, so the retry happens there.
+      expect(core.info).toHaveBeenCalledWith(expect.stringContaining('Retry validateCredentials'));
       expect(core.info).toHaveBeenCalledWith(
         expect.stringContaining('The security token included in the request is invalid'),
       );
