@@ -1072,14 +1072,14 @@ var require_util = __commonJS({
         }
         const port = url.port != null ? url.port : url.protocol === "https:" ? 443 : 80;
         let origin = url.origin != null ? url.origin : `${url.protocol || ""}//${url.hostname || ""}:${port}`;
-        let path3 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
+        let path4 = url.path != null ? url.path : `${url.pathname || ""}${url.search || ""}`;
         if (origin[origin.length - 1] === "/") {
           origin = origin.slice(0, origin.length - 1);
         }
-        if (path3 && path3[0] !== "/") {
-          path3 = `/${path3}`;
+        if (path4 && path4[0] !== "/") {
+          path4 = `/${path4}`;
         }
-        return new URL(`${origin}${path3}`);
+        return new URL(`${origin}${path4}`);
       }
       if (!isHttpOrHttpsPrefixed(url.origin || url.protocol)) {
         throw new InvalidArgumentError("Invalid URL protocol: the URL must start with `http:` or `https:`.");
@@ -1530,39 +1530,39 @@ var require_diagnostics = __commonJS({
       });
       diagnosticsChannel.channel("undici:client:sendHeaders").subscribe((evt) => {
         const {
-          request: { method, path: path3, origin }
+          request: { method, path: path4, origin }
         } = evt;
-        debuglog("sending request to %s %s/%s", method, origin, path3);
+        debuglog("sending request to %s %s/%s", method, origin, path4);
       });
       diagnosticsChannel.channel("undici:request:headers").subscribe((evt) => {
         const {
-          request: { method, path: path3, origin },
+          request: { method, path: path4, origin },
           response: { statusCode }
         } = evt;
         debuglog(
           "received response to %s %s/%s - HTTP %d",
           method,
           origin,
-          path3,
+          path4,
           statusCode
         );
       });
       diagnosticsChannel.channel("undici:request:trailers").subscribe((evt) => {
         const {
-          request: { method, path: path3, origin }
+          request: { method, path: path4, origin }
         } = evt;
-        debuglog("trailers received from %s %s/%s", method, origin, path3);
+        debuglog("trailers received from %s %s/%s", method, origin, path4);
       });
       diagnosticsChannel.channel("undici:request:error").subscribe((evt) => {
         const {
-          request: { method, path: path3, origin },
+          request: { method, path: path4, origin },
           error: error3
         } = evt;
         debuglog(
           "request to %s %s/%s errored - %s",
           method,
           origin,
-          path3,
+          path4,
           error3.message
         );
       });
@@ -1611,9 +1611,9 @@ var require_diagnostics = __commonJS({
         });
         diagnosticsChannel.channel("undici:client:sendHeaders").subscribe((evt) => {
           const {
-            request: { method, path: path3, origin }
+            request: { method, path: path4, origin }
           } = evt;
-          debuglog("sending request to %s %s/%s", method, origin, path3);
+          debuglog("sending request to %s %s/%s", method, origin, path4);
         });
       }
       diagnosticsChannel.channel("undici:websocket:open").subscribe((evt) => {
@@ -1676,7 +1676,7 @@ var require_request = __commonJS({
     var kHandler = /* @__PURE__ */ Symbol("handler");
     var Request = class {
       constructor(origin, {
-        path: path3,
+        path: path4,
         method,
         body,
         headers,
@@ -1691,11 +1691,11 @@ var require_request = __commonJS({
         expectContinue,
         servername
       }, handler) {
-        if (typeof path3 !== "string") {
+        if (typeof path4 !== "string") {
           throw new InvalidArgumentError("path must be a string");
-        } else if (path3[0] !== "/" && !(path3.startsWith("http://") || path3.startsWith("https://")) && method !== "CONNECT") {
+        } else if (path4[0] !== "/" && !(path4.startsWith("http://") || path4.startsWith("https://")) && method !== "CONNECT") {
           throw new InvalidArgumentError("path must be an absolute URL or start with a slash");
-        } else if (invalidPathRegex.test(path3)) {
+        } else if (invalidPathRegex.test(path4)) {
           throw new InvalidArgumentError("invalid request path");
         }
         if (typeof method !== "string") {
@@ -1761,7 +1761,7 @@ var require_request = __commonJS({
         this.completed = false;
         this.aborted = false;
         this.upgrade = upgrade || null;
-        this.path = query ? buildURL(path3, query) : path3;
+        this.path = query ? buildURL(path4, query) : path4;
         this.origin = origin;
         this.idempotent = idempotent == null ? method === "HEAD" || method === "GET" : idempotent;
         this.blocking = blocking == null ? false : blocking;
@@ -5710,7 +5710,7 @@ var require_client_h1 = __commonJS({
       kResume,
       kHTTPContext
     } = require_symbols();
-    var constants3 = require_constants2();
+    var constants4 = require_constants2();
     var EMPTY_BUF = Buffer.alloc(0);
     var FastBuffer = Buffer[Symbol.species];
     var addListener = util.addListener;
@@ -5782,7 +5782,7 @@ var require_client_h1 = __commonJS({
       constructor(client, socket, { exports: exports3 }) {
         assert4(Number.isFinite(client[kMaxHeadersSize]) && client[kMaxHeadersSize] > 0);
         this.llhttp = exports3;
-        this.ptr = this.llhttp.llhttp_alloc(constants3.TYPE.RESPONSE);
+        this.ptr = this.llhttp.llhttp_alloc(constants4.TYPE.RESPONSE);
         this.client = client;
         this.socket = socket;
         this.timeout = null;
@@ -5877,19 +5877,19 @@ var require_client_h1 = __commonJS({
             currentBufferRef = null;
           }
           const offset = llhttp.llhttp_get_error_pos(this.ptr) - currentBufferPtr;
-          if (ret === constants3.ERROR.PAUSED_UPGRADE) {
+          if (ret === constants4.ERROR.PAUSED_UPGRADE) {
             this.onUpgrade(data3.slice(offset));
-          } else if (ret === constants3.ERROR.PAUSED) {
+          } else if (ret === constants4.ERROR.PAUSED) {
             this.paused = true;
             socket.unshift(data3.slice(offset));
-          } else if (ret !== constants3.ERROR.OK) {
+          } else if (ret !== constants4.ERROR.OK) {
             const ptr = llhttp.llhttp_get_error_reason(this.ptr);
             let message = "";
             if (ptr) {
               const len = new Uint8Array(llhttp.memory.buffer, ptr).indexOf(0);
               message = "Response does not match the HTTP/1.1 protocol (" + Buffer.from(llhttp.memory.buffer, ptr, len).toString() + ")";
             }
-            throw new HTTPParserError(message, constants3.ERROR[ret], data3.slice(offset));
+            throw new HTTPParserError(message, constants4.ERROR[ret], data3.slice(offset));
           }
         } catch (err) {
           util.destroy(socket, err);
@@ -6064,7 +6064,7 @@ var require_client_h1 = __commonJS({
           socket[kBlocking] = false;
           client[kResume]();
         }
-        return pause ? constants3.ERROR.PAUSED : 0;
+        return pause ? constants4.ERROR.PAUSED : 0;
       }
       onBody(buf) {
         const { client, socket, statusCode, maxResponseSize } = this;
@@ -6086,7 +6086,7 @@ var require_client_h1 = __commonJS({
         }
         this.bytesRead += buf.length;
         if (request.onData(buf) === false) {
-          return constants3.ERROR.PAUSED;
+          return constants4.ERROR.PAUSED;
         }
       }
       onMessageComplete() {
@@ -6121,13 +6121,13 @@ var require_client_h1 = __commonJS({
         if (socket[kWriting]) {
           assert4(client[kRunning] === 0);
           util.destroy(socket, new InformationalError("reset"));
-          return constants3.ERROR.PAUSED;
+          return constants4.ERROR.PAUSED;
         } else if (!shouldKeepAlive) {
           util.destroy(socket, new InformationalError("reset"));
-          return constants3.ERROR.PAUSED;
+          return constants4.ERROR.PAUSED;
         } else if (socket[kReset] && client[kRunning] === 0) {
           util.destroy(socket, new InformationalError("reset"));
-          return constants3.ERROR.PAUSED;
+          return constants4.ERROR.PAUSED;
         } else if (client[kPipelining] == null || client[kPipelining] === 1) {
           setImmediate(() => client[kResume]());
         } else {
@@ -6287,7 +6287,7 @@ var require_client_h1 = __commonJS({
       return method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && method !== "TRACE" && method !== "CONNECT";
     }
     function writeH1(client, request) {
-      const { method, path: path3, host, upgrade, blocking, reset } = request;
+      const { method, path: path4, host, upgrade, blocking, reset } = request;
       let { body, headers, contentLength } = request;
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH" || method === "QUERY" || method === "PROPFIND" || method === "PROPPATCH";
       if (util.isFormDataLike(body)) {
@@ -6353,7 +6353,7 @@ var require_client_h1 = __commonJS({
       if (blocking) {
         socket[kBlocking] = true;
       }
-      let header = `${method} ${path3} HTTP/1.1\r
+      let header = `${method} ${path4} HTTP/1.1\r
 `;
       if (typeof host === "string") {
         header += `host: ${host}\r
@@ -6879,7 +6879,7 @@ var require_client_h2 = __commonJS({
     }
     function writeH2(client, request) {
       const session = client[kHTTP2Session];
-      const { method, path: path3, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
+      const { method, path: path4, host, upgrade, expectContinue, signal, headers: reqHeaders } = request;
       let { body } = request;
       if (upgrade) {
         util.errorRequest(client, request, new Error("Upgrade not supported for H2"));
@@ -6946,7 +6946,7 @@ var require_client_h2 = __commonJS({
         });
         return true;
       }
-      headers[HTTP2_HEADER_PATH] = path3;
+      headers[HTTP2_HEADER_PATH] = path4;
       headers[HTTP2_HEADER_SCHEME] = "https";
       const expectsPayload = method === "PUT" || method === "POST" || method === "PATCH";
       if (body && typeof body.read === "function") {
@@ -7299,9 +7299,9 @@ var require_redirect_handler = __commonJS({
           return this.handler.onHeaders(statusCode, headers, resume3, statusText);
         }
         const { origin, pathname, search } = util.parseURL(new URL(this.location, this.opts.origin && new URL(this.opts.path, this.opts.origin)));
-        const path3 = search ? `${pathname}${search}` : pathname;
+        const path4 = search ? `${pathname}${search}` : pathname;
         this.opts.headers = cleanRequestHeaders(this.opts.headers, statusCode === 303, this.opts.origin !== origin);
-        this.opts.path = path3;
+        this.opts.path = path4;
         this.opts.origin = origin;
         this.opts.maxRedirections = 0;
         this.opts.query = null;
@@ -8536,10 +8536,10 @@ var require_proxy_agent = __commonJS({
         };
         const {
           origin,
-          path: path3 = "/",
+          path: path4 = "/",
           headers = {}
         } = opts;
-        opts.path = origin + path3;
+        opts.path = origin + path4;
         if (!("host" in headers) && !("Host" in headers)) {
           const { host } = new URL10(origin);
           headers.host = host;
@@ -10460,20 +10460,20 @@ var require_mock_utils = __commonJS({
       }
       return true;
     }
-    function safeUrl(path3) {
-      if (typeof path3 !== "string") {
-        return path3;
+    function safeUrl(path4) {
+      if (typeof path4 !== "string") {
+        return path4;
       }
-      const pathSegments = path3.split("?");
+      const pathSegments = path4.split("?");
       if (pathSegments.length !== 2) {
-        return path3;
+        return path4;
       }
       const qp = new URLSearchParams(pathSegments.pop());
       qp.sort();
       return [...pathSegments, qp.toString()].join("?");
     }
-    function matchKey(mockDispatch2, { path: path3, method, body, headers }) {
-      const pathMatch = matchValue(mockDispatch2.path, path3);
+    function matchKey(mockDispatch2, { path: path4, method, body, headers }) {
+      const pathMatch = matchValue(mockDispatch2.path, path4);
       const methodMatch = matchValue(mockDispatch2.method, method);
       const bodyMatch = typeof mockDispatch2.body !== "undefined" ? matchValue(mockDispatch2.body, body) : true;
       const headersMatch = matchHeaders(mockDispatch2, headers);
@@ -10495,7 +10495,7 @@ var require_mock_utils = __commonJS({
     function getMockDispatch(mockDispatches, key) {
       const basePath = key.query ? buildURL(key.path, key.query) : key.path;
       const resolvedPath2 = typeof basePath === "string" ? safeUrl(basePath) : basePath;
-      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path3 }) => matchValue(safeUrl(path3), resolvedPath2));
+      let matchedMockDispatches = mockDispatches.filter(({ consumed }) => !consumed).filter(({ path: path4 }) => matchValue(safeUrl(path4), resolvedPath2));
       if (matchedMockDispatches.length === 0) {
         throw new MockNotMatchedError(`Mock dispatch not matched for path '${resolvedPath2}'`);
       }
@@ -10533,9 +10533,9 @@ var require_mock_utils = __commonJS({
       }
     }
     function buildKey(opts) {
-      const { path: path3, method, body, headers, query } = opts;
+      const { path: path4, method, body, headers, query } = opts;
       return {
-        path: path3,
+        path: path4,
         method,
         body,
         headers,
@@ -10998,10 +10998,10 @@ var require_pending_interceptors_formatter = __commonJS({
       }
       format(pendingInterceptors) {
         const withPrettyHeaders = pendingInterceptors.map(
-          ({ method, path: path3, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
+          ({ method, path: path4, data: { statusCode }, persist, times, timesInvoked, origin }) => ({
             Method: method,
             Origin: origin,
-            Path: path3,
+            Path: path4,
             "Status code": statusCode,
             Persistent: persist ? PERSISTENT : NOT_PERSISTENT,
             Invocations: timesInvoked,
@@ -15882,9 +15882,9 @@ var require_util6 = __commonJS({
         }
       }
     }
-    function validateCookiePath(path3) {
-      for (let i5 = 0; i5 < path3.length; ++i5) {
-        const code = path3.charCodeAt(i5);
+    function validateCookiePath(path4) {
+      for (let i5 = 0; i5 < path4.length; ++i5) {
+        const code = path4.charCodeAt(i5);
         if (code < 32 || // exclude CTLs (0-31)
         code === 127 || // DEL
         code === 59) {
@@ -18561,11 +18561,11 @@ var require_undici = __commonJS({
           if (typeof opts.path !== "string") {
             throw new InvalidArgumentError("invalid opts.path");
           }
-          let path3 = opts.path;
+          let path4 = opts.path;
           if (!opts.path.startsWith("/")) {
-            path3 = `/${path3}`;
+            path4 = `/${path4}`;
           }
-          url = new URL(util.parseOrigin(url).origin + path3);
+          url = new URL(util.parseOrigin(url).origin + path4);
         } else {
           if (!opts) {
             opts = typeof url === "object" ? url : {};
@@ -19049,7 +19049,7 @@ var require_dist_cjs = __commonJS({
       FieldPosition2[FieldPosition2["HEADER"] = 0] = "HEADER";
       FieldPosition2[FieldPosition2["TRAILER"] = 1] = "TRAILER";
     })(exports2.FieldPosition || (exports2.FieldPosition = {}));
-    var SMITHY_CONTEXT_KEY4 = "__smithy_context";
+    var SMITHY_CONTEXT_KEY3 = "__smithy_context";
     exports2.IniSectionType = void 0;
     (function(IniSectionType4) {
       IniSectionType4["PROFILE"] = "profile";
@@ -19062,31 +19062,239 @@ var require_dist_cjs = __commonJS({
       RequestHandlerProtocol["HTTP_1_0"] = "http/1.0";
       RequestHandlerProtocol["TDS_8_0"] = "tds/8.0";
     })(exports2.RequestHandlerProtocol || (exports2.RequestHandlerProtocol = {}));
-    exports2.SMITHY_CONTEXT_KEY = SMITHY_CONTEXT_KEY4;
+    exports2.SMITHY_CONTEXT_KEY = SMITHY_CONTEXT_KEY3;
     exports2.getDefaultClientConfiguration = getDefaultClientConfiguration2;
     exports2.resolveDefaultRuntimeConfig = resolveDefaultRuntimeConfig2;
   }
 });
 
-// node_modules/@smithy/core/dist-es/submodules/client/util-middleware/getSmithyContext.js
+// node_modules/@smithy/core/dist-es/submodules/transport/getSmithyContext.js
 var import_types, getSmithyContext;
 var init_getSmithyContext = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/util-middleware/getSmithyContext.js"() {
+  "node_modules/@smithy/core/dist-es/submodules/transport/getSmithyContext.js"() {
     import_types = __toESM(require_dist_cjs());
     getSmithyContext = (context) => context[import_types.SMITHY_CONTEXT_KEY] || (context[import_types.SMITHY_CONTEXT_KEY] = {});
   }
 });
 
-// node_modules/@smithy/core/dist-es/submodules/client/util-middleware/normalizeProvider.js
+// node_modules/@smithy/core/dist-es/submodules/transport/httpRequest.js
+function cloneQuery(query) {
+  return Object.keys(query).reduce((carry, paramName) => {
+    const param = query[paramName];
+    return {
+      ...carry,
+      [paramName]: Array.isArray(param) ? [...param] : param
+    };
+  }, {});
+}
+var HttpRequest;
+var init_httpRequest = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/httpRequest.js"() {
+    HttpRequest = class _HttpRequest {
+      method;
+      protocol;
+      hostname;
+      port;
+      path;
+      query;
+      headers;
+      username;
+      password;
+      fragment;
+      body;
+      constructor(options) {
+        this.method = options.method || "GET";
+        this.hostname = options.hostname || "localhost";
+        this.port = options.port;
+        this.query = options.query || {};
+        this.headers = options.headers || {};
+        this.body = options.body;
+        this.protocol = options.protocol ? options.protocol.slice(-1) !== ":" ? `${options.protocol}:` : options.protocol : "https:";
+        this.path = options.path ? options.path.charAt(0) !== "/" ? `/${options.path}` : options.path : "/";
+        this.username = options.username;
+        this.password = options.password;
+        this.fragment = options.fragment;
+      }
+      static clone(request) {
+        const cloned = new _HttpRequest({
+          ...request,
+          headers: { ...request.headers }
+        });
+        if (cloned.query) {
+          cloned.query = cloneQuery(cloned.query);
+        }
+        return cloned;
+      }
+      static isInstance(request) {
+        if (!request) {
+          return false;
+        }
+        const req = request;
+        return "method" in req && "protocol" in req && "hostname" in req && "path" in req && typeof req["query"] === "object" && typeof req["headers"] === "object";
+      }
+      clone() {
+        return _HttpRequest.clone(this);
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/transport/httpResponse.js
+var HttpResponse;
+var init_httpResponse = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/httpResponse.js"() {
+    HttpResponse = class {
+      statusCode;
+      reason;
+      headers;
+      body;
+      constructor(options) {
+        this.statusCode = options.statusCode;
+        this.reason = options.reason;
+        this.headers = options.headers || {};
+        this.body = options.body;
+      }
+      static isInstance(response) {
+        if (!response)
+          return false;
+        const resp = response;
+        return typeof resp.statusCode === "number" && typeof resp.headers === "object";
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/transport/isValidHostLabel.js
+var VALID_HOST_LABEL_REGEX, isValidHostLabel;
+var init_isValidHostLabel = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/isValidHostLabel.js"() {
+    VALID_HOST_LABEL_REGEX = new RegExp(`^(?!.*-$)(?!-)[a-zA-Z0-9-]{1,63}$`);
+    isValidHostLabel = (value, allowSubDomains = false) => {
+      if (!allowSubDomains) {
+        return VALID_HOST_LABEL_REGEX.test(value);
+      }
+      const labels = value.split(".");
+      for (const label of labels) {
+        if (!isValidHostLabel(label)) {
+          return false;
+        }
+      }
+      return true;
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/transport/isValidHostname.js
+function isValidHostname(hostname) {
+  const hostPattern = /^[a-z0-9][a-z0-9\.\-]*[a-z0-9]$/;
+  return hostPattern.test(hostname);
+}
+var init_isValidHostname = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/isValidHostname.js"() {
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/transport/normalizeProvider.js
 var normalizeProvider;
 var init_normalizeProvider = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/util-middleware/normalizeProvider.js"() {
+  "node_modules/@smithy/core/dist-es/submodules/transport/normalizeProvider.js"() {
     normalizeProvider = (input) => {
       if (typeof input === "function")
         return input;
       const promisified = Promise.resolve(input);
       return () => promisified;
     };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/transport/parseQueryString.js
+function parseQueryString(querystring) {
+  const query = {};
+  querystring = querystring.replace(/^\?/, "");
+  if (querystring) {
+    for (const pair of querystring.split("&")) {
+      let [key, value = null] = pair.split("=");
+      key = decodeURIComponent(key);
+      if (value) {
+        value = decodeURIComponent(value);
+      }
+      if (!(key in query)) {
+        query[key] = value;
+      } else if (Array.isArray(query[key])) {
+        query[key].push(value);
+      } else {
+        query[key] = [query[key], value];
+      }
+    }
+  }
+  return query;
+}
+var init_parseQueryString = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/parseQueryString.js"() {
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/transport/parseUrl.js
+var parseUrl;
+var init_parseUrl = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/parseUrl.js"() {
+    init_parseQueryString();
+    parseUrl = (url) => {
+      if (typeof url === "string") {
+        return parseUrl(new URL(url));
+      }
+      const { hostname, pathname, port, protocol, search } = url;
+      let query;
+      if (search) {
+        query = parseQueryString(search);
+      }
+      return {
+        hostname,
+        port: port ? parseInt(port) : void 0,
+        protocol,
+        path: pathname,
+        query
+      };
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/transport/toEndpointV1.js
+var toEndpointV1;
+var init_toEndpointV1 = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/toEndpointV1.js"() {
+    init_parseUrl();
+    toEndpointV1 = (endpoint) => {
+      if (typeof endpoint === "object") {
+        if ("url" in endpoint) {
+          const v1Endpoint = parseUrl(endpoint.url);
+          if (endpoint.headers) {
+            v1Endpoint.headers = {};
+            for (const name in endpoint.headers) {
+              v1Endpoint.headers[name.toLowerCase()] = endpoint.headers[name].join(", ");
+            }
+          }
+          return v1Endpoint;
+        }
+        return endpoint;
+      }
+      return parseUrl(endpoint);
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/transport/index.js
+var init_transport = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/index.js"() {
+    init_getSmithyContext();
+    init_httpRequest();
+    init_httpResponse();
+    init_isValidHostLabel();
+    init_isValidHostname();
+    init_normalizeProvider();
+    init_parseQueryString();
+    init_parseUrl();
+    init_toEndpointV1();
   }
 });
 
@@ -19406,6 +19614,1534 @@ var init_deref = __esm({
       }
       return schemaRef;
     };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/operation.js
+var operation;
+var init_operation = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/operation.js"() {
+    operation = (namespace, name, traits, input, output) => ({
+      name,
+      namespace,
+      traits,
+      input,
+      output
+    });
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaDeserializationMiddleware.js
+var schemaDeserializationMiddleware, findHeader;
+var init_schemaDeserializationMiddleware = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaDeserializationMiddleware.js"() {
+    init_transport();
+    init_operation();
+    schemaDeserializationMiddleware = (config) => (next, context) => async (args) => {
+      const { response } = await next(args);
+      const { operationSchema } = getSmithyContext(context);
+      const [, ns, n3, t, i5, o2] = operationSchema ?? [];
+      try {
+        const parsed = await config.protocol.deserializeResponse(operation(ns, n3, t, i5, o2), {
+          ...config,
+          ...context
+        }, response);
+        return {
+          response,
+          output: parsed
+        };
+      } catch (error3) {
+        Object.defineProperty(error3, "$response", {
+          value: response,
+          enumerable: false,
+          writable: false,
+          configurable: false
+        });
+        if (!("$metadata" in error3)) {
+          const hint = `Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object.`;
+          try {
+            error3.message += "\n  " + hint;
+          } catch (e5) {
+            if (!context.logger || context.logger?.constructor?.name === "NoOpLogger") {
+              console.warn(hint);
+            } else {
+              context.logger?.warn?.(hint);
+            }
+          }
+          if (typeof error3.$responseBodyText !== "undefined") {
+            if (error3.$response) {
+              error3.$response.body = error3.$responseBodyText;
+            }
+          }
+          try {
+            if (HttpResponse.isInstance(response)) {
+              const { headers = {}, statusCode } = response;
+              const headerEntries = Object.entries(headers);
+              error3.$metadata = {
+                httpStatusCode: statusCode,
+                requestId: findHeader(/^x-[\w-]+-request-?id$/, headerEntries),
+                extendedRequestId: findHeader(/^x-[\w-]+-id-2$/, headerEntries),
+                cfId: findHeader(/^x-[\w-]+-cf-id$/, headerEntries)
+              };
+            }
+          } catch (e5) {
+          }
+        }
+        throw error3;
+      }
+    };
+    findHeader = (pattern, headers) => {
+      return (headers.find(([k5]) => {
+        return k5.match(pattern);
+      }) || [void 0, void 0])[1];
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaSerializationMiddleware.js
+var schemaSerializationMiddleware;
+var init_schemaSerializationMiddleware = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaSerializationMiddleware.js"() {
+    init_transport();
+    init_operation();
+    schemaSerializationMiddleware = (config) => (next, context) => async (args) => {
+      const { operationSchema } = getSmithyContext(context);
+      const [, ns, n3, t, i5, o2] = operationSchema ?? [];
+      const endpoint = context.endpointV2 ? async () => toEndpointV1(context.endpointV2) : config.endpoint;
+      const request = await config.protocol.serializeRequest(operation(ns, n3, t, i5, o2), args.input, {
+        ...config,
+        ...context,
+        endpoint
+      });
+      return next({
+        ...args,
+        request
+      });
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/middleware/getSchemaSerdePlugin.js
+function getSchemaSerdePlugin(config) {
+  return {
+    applyToStack: (commandStack) => {
+      commandStack.add(schemaSerializationMiddleware(config), serializerMiddlewareOption);
+      commandStack.add(schemaDeserializationMiddleware(config), deserializerMiddlewareOption);
+      config.protocol.setSerdeContext(config);
+    }
+  };
+}
+var deserializerMiddlewareOption, serializerMiddlewareOption;
+var init_getSchemaSerdePlugin = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/middleware/getSchemaSerdePlugin.js"() {
+    init_schemaDeserializationMiddleware();
+    init_schemaSerializationMiddleware();
+    deserializerMiddlewareOption = {
+      name: "deserializerMiddleware",
+      step: "deserialize",
+      tags: ["DESERIALIZER"],
+      override: true
+    };
+    serializerMiddlewareOption = {
+      name: "serializerMiddleware",
+      step: "serialize",
+      tags: ["SERIALIZER"],
+      override: true
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/Schema.js
+var Schema;
+var init_Schema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/Schema.js"() {
+    Schema = class {
+      name;
+      namespace;
+      traits;
+      static assign(instance, values) {
+        const schema = Object.assign(instance, values);
+        return schema;
+      }
+      static [Symbol.hasInstance](lhs) {
+        const isPrototype = this.prototype.isPrototypeOf(lhs);
+        if (!isPrototype && typeof lhs === "object" && lhs !== null) {
+          const list2 = lhs;
+          return list2.symbol === this.symbol;
+        }
+        return isPrototype;
+      }
+      getName() {
+        return this.namespace + "#" + this.name;
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/ListSchema.js
+var ListSchema, list;
+var init_ListSchema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/ListSchema.js"() {
+    init_Schema();
+    ListSchema = class _ListSchema extends Schema {
+      static symbol = /* @__PURE__ */ Symbol.for("@smithy/lis");
+      name;
+      traits;
+      valueSchema;
+      symbol = _ListSchema.symbol;
+    };
+    list = (namespace, name, traits, valueSchema) => Schema.assign(new ListSchema(), {
+      name,
+      namespace,
+      traits,
+      valueSchema
+    });
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/MapSchema.js
+var MapSchema, map;
+var init_MapSchema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/MapSchema.js"() {
+    init_Schema();
+    MapSchema = class _MapSchema extends Schema {
+      static symbol = /* @__PURE__ */ Symbol.for("@smithy/map");
+      name;
+      traits;
+      keySchema;
+      valueSchema;
+      symbol = _MapSchema.symbol;
+    };
+    map = (namespace, name, traits, keySchema, valueSchema) => Schema.assign(new MapSchema(), {
+      name,
+      namespace,
+      traits,
+      keySchema,
+      valueSchema
+    });
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/OperationSchema.js
+var OperationSchema, op;
+var init_OperationSchema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/OperationSchema.js"() {
+    init_Schema();
+    OperationSchema = class _OperationSchema extends Schema {
+      static symbol = /* @__PURE__ */ Symbol.for("@smithy/ope");
+      name;
+      traits;
+      input;
+      output;
+      symbol = _OperationSchema.symbol;
+    };
+    op = (namespace, name, traits, input, output) => Schema.assign(new OperationSchema(), {
+      name,
+      namespace,
+      traits,
+      input,
+      output
+    });
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/StructureSchema.js
+var StructureSchema, struct;
+var init_StructureSchema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/StructureSchema.js"() {
+    init_Schema();
+    StructureSchema = class _StructureSchema extends Schema {
+      static symbol = /* @__PURE__ */ Symbol.for("@smithy/str");
+      name;
+      traits;
+      memberNames;
+      memberList;
+      symbol = _StructureSchema.symbol;
+    };
+    struct = (namespace, name, traits, memberNames, memberList) => Schema.assign(new StructureSchema(), {
+      name,
+      namespace,
+      traits,
+      memberNames,
+      memberList
+    });
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/ErrorSchema.js
+var ErrorSchema, error2;
+var init_ErrorSchema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/ErrorSchema.js"() {
+    init_Schema();
+    init_StructureSchema();
+    ErrorSchema = class _ErrorSchema extends StructureSchema {
+      static symbol = /* @__PURE__ */ Symbol.for("@smithy/err");
+      ctor;
+      symbol = _ErrorSchema.symbol;
+    };
+    error2 = (namespace, name, traits, memberNames, memberList, ctor) => Schema.assign(new ErrorSchema(), {
+      name,
+      namespace,
+      traits,
+      memberNames,
+      memberList,
+      ctor: null
+    });
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/translateTraits.js
+function translateTraits(indicator) {
+  if (typeof indicator === "object") {
+    return indicator;
+  }
+  indicator = indicator | 0;
+  if (traitsCache[indicator]) {
+    return traitsCache[indicator];
+  }
+  const traits = {};
+  let i5 = 0;
+  for (const trait of [
+    "httpLabel",
+    "idempotent",
+    "idempotencyToken",
+    "sensitive",
+    "httpPayload",
+    "httpResponseCode",
+    "httpQueryParams"
+  ]) {
+    if ((indicator >> i5++ & 1) === 1) {
+      traits[trait] = 1;
+    }
+  }
+  return traitsCache[indicator] = traits;
+}
+var traitsCache;
+var init_translateTraits = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/translateTraits.js"() {
+    traitsCache = [];
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/NormalizedSchema.js
+function member(memberSchema, memberName) {
+  if (memberSchema instanceof NormalizedSchema) {
+    return Object.assign(memberSchema, {
+      memberName,
+      _isMemberSchema: true
+    });
+  }
+  const internalCtorAccess = NormalizedSchema;
+  return new internalCtorAccess(memberSchema, memberName);
+}
+var anno, simpleSchemaCacheN, simpleSchemaCacheS, NormalizedSchema, isMemberSchema, isStaticSchema;
+var init_NormalizedSchema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/NormalizedSchema.js"() {
+    init_deref();
+    init_translateTraits();
+    anno = {
+      it: /* @__PURE__ */ Symbol.for("@smithy/nor-struct-it"),
+      ns: /* @__PURE__ */ Symbol.for("@smithy/ns")
+    };
+    simpleSchemaCacheN = [];
+    simpleSchemaCacheS = {};
+    NormalizedSchema = class _NormalizedSchema {
+      ref;
+      memberName;
+      static symbol = /* @__PURE__ */ Symbol.for("@smithy/nor");
+      symbol = _NormalizedSchema.symbol;
+      name;
+      schema;
+      _isMemberSchema;
+      traits;
+      memberTraits;
+      normalizedTraits;
+      constructor(ref, memberName) {
+        this.ref = ref;
+        this.memberName = memberName;
+        const traitStack = [];
+        let _ref = ref;
+        let schema = ref;
+        this._isMemberSchema = false;
+        while (isMemberSchema(_ref)) {
+          traitStack.push(_ref[1]);
+          _ref = _ref[0];
+          schema = deref(_ref);
+          this._isMemberSchema = true;
+        }
+        if (traitStack.length > 0) {
+          this.memberTraits = {};
+          for (let i5 = traitStack.length - 1; i5 >= 0; --i5) {
+            const traitSet = traitStack[i5];
+            Object.assign(this.memberTraits, translateTraits(traitSet));
+          }
+        } else {
+          this.memberTraits = 0;
+        }
+        if (schema instanceof _NormalizedSchema) {
+          const computedMemberTraits = this.memberTraits;
+          Object.assign(this, schema);
+          this.memberTraits = Object.assign({}, computedMemberTraits, schema.getMemberTraits(), this.getMemberTraits());
+          this.normalizedTraits = void 0;
+          this.memberName = memberName ?? schema.memberName;
+          return;
+        }
+        this.schema = deref(schema);
+        if (isStaticSchema(this.schema)) {
+          this.name = `${this.schema[1]}#${this.schema[2]}`;
+          this.traits = this.schema[3];
+        } else {
+          this.name = this.memberName ?? String(schema);
+          this.traits = 0;
+        }
+        if (this._isMemberSchema && !memberName) {
+          throw new Error(`@smithy/core/schema - NormalizedSchema member init ${this.getName(true)} missing member name.`);
+        }
+      }
+      static [Symbol.hasInstance](lhs) {
+        const isPrototype = this.prototype.isPrototypeOf(lhs);
+        if (!isPrototype && typeof lhs === "object" && lhs !== null) {
+          const ns = lhs;
+          return ns.symbol === this.symbol;
+        }
+        return isPrototype;
+      }
+      static of(ref) {
+        const keyAble = typeof ref === "function" || typeof ref === "object" && ref !== null;
+        if (typeof ref === "number") {
+          if (simpleSchemaCacheN[ref]) {
+            return simpleSchemaCacheN[ref];
+          }
+        } else if (typeof ref === "string") {
+          if (simpleSchemaCacheS[ref]) {
+            return simpleSchemaCacheS[ref];
+          }
+        } else if (keyAble) {
+          if (ref[anno.ns]) {
+            return ref[anno.ns];
+          }
+        }
+        const sc = deref(ref);
+        if (sc instanceof _NormalizedSchema) {
+          return sc;
+        }
+        if (isMemberSchema(sc)) {
+          const [ns2, traits] = sc;
+          if (ns2 instanceof _NormalizedSchema) {
+            Object.assign(ns2.getMergedTraits(), translateTraits(traits));
+            return ns2;
+          }
+          throw new Error(`@smithy/core/schema - may not init unwrapped member schema=${JSON.stringify(ref, null, 2)}.`);
+        }
+        const ns = new _NormalizedSchema(sc);
+        if (keyAble) {
+          return ref[anno.ns] = ns;
+        }
+        if (typeof sc === "string") {
+          return simpleSchemaCacheS[sc] = ns;
+        }
+        if (typeof sc === "number") {
+          return simpleSchemaCacheN[sc] = ns;
+        }
+        return ns;
+      }
+      getSchema() {
+        const sc = this.schema;
+        if (Array.isArray(sc) && sc[0] === 0) {
+          return sc[4];
+        }
+        return sc;
+      }
+      getName(withNamespace = false) {
+        const { name } = this;
+        const short = !withNamespace && name && name.includes("#");
+        return short ? name.split("#")[1] : name || void 0;
+      }
+      getMemberName() {
+        return this.memberName;
+      }
+      isMemberSchema() {
+        return this._isMemberSchema;
+      }
+      isListSchema() {
+        const sc = this.getSchema();
+        return typeof sc === "number" ? sc >= 64 && sc < 128 : sc[0] === 1;
+      }
+      isMapSchema() {
+        const sc = this.getSchema();
+        return typeof sc === "number" ? sc >= 128 && sc <= 255 : sc[0] === 2;
+      }
+      isStructSchema() {
+        const sc = this.getSchema();
+        if (typeof sc !== "object") {
+          return false;
+        }
+        const id = sc[0];
+        return id === 3 || id === -3 || id === 4;
+      }
+      isUnionSchema() {
+        const sc = this.getSchema();
+        if (typeof sc !== "object") {
+          return false;
+        }
+        return sc[0] === 4;
+      }
+      isBlobSchema() {
+        const sc = this.getSchema();
+        return sc === 21 || sc === 42;
+      }
+      isTimestampSchema() {
+        const sc = this.getSchema();
+        return typeof sc === "number" && sc >= 4 && sc <= 7;
+      }
+      isUnitSchema() {
+        return this.getSchema() === "unit";
+      }
+      isDocumentSchema() {
+        return this.getSchema() === 15;
+      }
+      isStringSchema() {
+        return this.getSchema() === 0;
+      }
+      isBooleanSchema() {
+        return this.getSchema() === 2;
+      }
+      isNumericSchema() {
+        return this.getSchema() === 1;
+      }
+      isBigIntegerSchema() {
+        return this.getSchema() === 17;
+      }
+      isBigDecimalSchema() {
+        return this.getSchema() === 19;
+      }
+      isStreaming() {
+        const { streaming } = this.getMergedTraits();
+        return !!streaming || this.getSchema() === 42;
+      }
+      isIdempotencyToken() {
+        return !!this.getMergedTraits().idempotencyToken;
+      }
+      getMergedTraits() {
+        return this.normalizedTraits ?? (this.normalizedTraits = {
+          ...this.getOwnTraits(),
+          ...this.getMemberTraits()
+        });
+      }
+      getMemberTraits() {
+        return translateTraits(this.memberTraits);
+      }
+      getOwnTraits() {
+        return translateTraits(this.traits);
+      }
+      getKeySchema() {
+        const [isDoc, isMap] = [this.isDocumentSchema(), this.isMapSchema()];
+        if (!isDoc && !isMap) {
+          throw new Error(`@smithy/core/schema - cannot get key for non-map: ${this.getName(true)}`);
+        }
+        const schema = this.getSchema();
+        const memberSchema = isDoc ? 15 : schema[4] ?? 0;
+        return member([memberSchema, 0], "key");
+      }
+      getValueSchema() {
+        const sc = this.getSchema();
+        const [isDoc, isMap, isList] = [this.isDocumentSchema(), this.isMapSchema(), this.isListSchema()];
+        const memberSchema = typeof sc === "number" ? 63 & sc : sc && typeof sc === "object" && (isMap || isList) ? sc[3 + sc[0]] : isDoc ? 15 : void 0;
+        if (memberSchema != null) {
+          return member([memberSchema, 0], isMap ? "value" : "member");
+        }
+        throw new Error(`@smithy/core/schema - ${this.getName(true)} has no value member.`);
+      }
+      getMemberSchema(memberName) {
+        const struct2 = this.getSchema();
+        if (this.isStructSchema() && struct2[4].includes(memberName)) {
+          const i5 = struct2[4].indexOf(memberName);
+          const memberSchema = struct2[5][i5];
+          return member(isMemberSchema(memberSchema) ? memberSchema : [memberSchema, 0], memberName);
+        }
+        if (this.isDocumentSchema()) {
+          return member([15, 0], memberName);
+        }
+        throw new Error(`@smithy/core/schema - ${this.getName(true)} has no member=${memberName}.`);
+      }
+      getMemberSchemas() {
+        const buffer = {};
+        try {
+          for (const [k5, v] of this.structIterator()) {
+            buffer[k5] = v;
+          }
+        } catch (ignored) {
+        }
+        return buffer;
+      }
+      getEventStreamMember() {
+        if (this.isStructSchema()) {
+          for (const [memberName, memberSchema] of this.structIterator()) {
+            if (memberSchema.isStreaming() && memberSchema.isStructSchema()) {
+              return memberName;
+            }
+          }
+        }
+        return "";
+      }
+      *structIterator() {
+        if (this.isUnitSchema()) {
+          return;
+        }
+        if (!this.isStructSchema()) {
+          throw new Error("@smithy/core/schema - cannot iterate non-struct schema.");
+        }
+        const struct2 = this.getSchema();
+        const z = struct2[4].length;
+        let it = struct2[anno.it];
+        if (it && z === it.length) {
+          yield* it;
+          return;
+        }
+        it = Array(z);
+        for (let i5 = 0; i5 < z; ++i5) {
+          const k5 = struct2[4][i5];
+          const v = member([struct2[5][i5], 0], k5);
+          yield it[i5] = [k5, v];
+        }
+        struct2[anno.it] = it;
+      }
+    };
+    isMemberSchema = (sc) => Array.isArray(sc) && sc.length === 2;
+    isStaticSchema = (sc) => Array.isArray(sc) && sc.length >= 5;
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/SimpleSchema.js
+var SimpleSchema, sim, simAdapter;
+var init_SimpleSchema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/SimpleSchema.js"() {
+    init_Schema();
+    SimpleSchema = class _SimpleSchema extends Schema {
+      static symbol = /* @__PURE__ */ Symbol.for("@smithy/sim");
+      name;
+      schemaRef;
+      traits;
+      symbol = _SimpleSchema.symbol;
+    };
+    sim = (namespace, name, schemaRef, traits) => Schema.assign(new SimpleSchema(), {
+      name,
+      namespace,
+      traits,
+      schemaRef
+    });
+    simAdapter = (namespace, name, traits, schemaRef) => Schema.assign(new SimpleSchema(), {
+      name,
+      namespace,
+      traits,
+      schemaRef
+    });
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/schemas/sentinels.js
+var SCHEMA;
+var init_sentinels = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/sentinels.js"() {
+    SCHEMA = {
+      BLOB: 21,
+      STREAMING_BLOB: 42,
+      BOOLEAN: 2,
+      STRING: 0,
+      NUMERIC: 1,
+      BIG_INTEGER: 17,
+      BIG_DECIMAL: 19,
+      DOCUMENT: 15,
+      TIMESTAMP_DEFAULT: 4,
+      TIMESTAMP_DATE_TIME: 5,
+      TIMESTAMP_HTTP_DATE: 6,
+      TIMESTAMP_EPOCH_SECONDS: 7,
+      LIST_MODIFIER: 64,
+      MAP_MODIFIER: 128
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/TypeRegistry.js
+var TypeRegistry;
+var init_TypeRegistry = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/TypeRegistry.js"() {
+    TypeRegistry = class _TypeRegistry {
+      namespace;
+      schemas;
+      exceptions;
+      static registries = /* @__PURE__ */ new Map();
+      constructor(namespace, schemas = /* @__PURE__ */ new Map(), exceptions = /* @__PURE__ */ new Map()) {
+        this.namespace = namespace;
+        this.schemas = schemas;
+        this.exceptions = exceptions;
+      }
+      static for(namespace) {
+        if (!_TypeRegistry.registries.has(namespace)) {
+          _TypeRegistry.registries.set(namespace, new _TypeRegistry(namespace));
+        }
+        return _TypeRegistry.registries.get(namespace);
+      }
+      copyFrom(other) {
+        const { schemas, exceptions } = this;
+        for (const [k5, v] of other.schemas) {
+          if (!schemas.has(k5)) {
+            schemas.set(k5, v);
+          }
+        }
+        for (const [k5, v] of other.exceptions) {
+          if (!exceptions.has(k5)) {
+            exceptions.set(k5, v);
+          }
+        }
+      }
+      register(shapeId, schema) {
+        const qualifiedName = this.normalizeShapeId(shapeId);
+        for (const r5 of [this, _TypeRegistry.for(qualifiedName.split("#")[0])]) {
+          r5.schemas.set(qualifiedName, schema);
+        }
+      }
+      getSchema(shapeId) {
+        const id = this.normalizeShapeId(shapeId);
+        if (!this.schemas.has(id)) {
+          if (!shapeId.includes("#")) {
+            const suffix = "#" + shapeId;
+            const candidates = [];
+            for (const [shapeId2, schema] of this.schemas.entries()) {
+              if (shapeId2.endsWith(suffix)) {
+                candidates.push(schema);
+              }
+            }
+            if (candidates.length === 1) {
+              return candidates[0];
+            }
+          }
+          throw new Error(`@smithy/core/schema - schema not found for ${id}`);
+        }
+        return this.schemas.get(id);
+      }
+      registerError(es, ctor) {
+        const $error = es;
+        const ns = $error[1];
+        for (const r5 of [this, _TypeRegistry.for(ns)]) {
+          r5.schemas.set(ns + "#" + $error[2], $error);
+          r5.exceptions.set($error, ctor);
+        }
+      }
+      getErrorCtor(es) {
+        const $error = es;
+        if (this.exceptions.has($error)) {
+          return this.exceptions.get($error);
+        }
+        const registry = _TypeRegistry.for($error[1]);
+        return registry.exceptions.get($error);
+      }
+      getBaseException() {
+        for (const exceptionKey of this.exceptions.keys()) {
+          if (Array.isArray(exceptionKey)) {
+            const [, ns, name] = exceptionKey;
+            const id = ns + "#" + name;
+            if (id.startsWith("smithy.ts.sdk.synthetic.") && id.endsWith("ServiceException")) {
+              return exceptionKey;
+            }
+          }
+        }
+        return void 0;
+      }
+      find(predicate) {
+        for (const schema of this.schemas.values()) {
+          if (predicate(schema)) {
+            return schema;
+          }
+        }
+        return void 0;
+      }
+      clear() {
+        this.schemas.clear();
+        this.exceptions.clear();
+      }
+      normalizeShapeId(shapeId) {
+        if (shapeId.includes("#")) {
+          return shapeId;
+        }
+        return this.namespace + "#" + shapeId;
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/schema/index.js
+var schema_exports = {};
+__export(schema_exports, {
+  ErrorSchema: () => ErrorSchema,
+  ListSchema: () => ListSchema,
+  MapSchema: () => MapSchema,
+  NormalizedSchema: () => NormalizedSchema,
+  OperationSchema: () => OperationSchema,
+  SCHEMA: () => SCHEMA,
+  Schema: () => Schema,
+  SimpleSchema: () => SimpleSchema,
+  StructureSchema: () => StructureSchema,
+  TypeRegistry: () => TypeRegistry,
+  deref: () => deref,
+  deserializerMiddlewareOption: () => deserializerMiddlewareOption,
+  error: () => error2,
+  getSchemaSerdePlugin: () => getSchemaSerdePlugin,
+  isStaticSchema: () => isStaticSchema,
+  list: () => list,
+  map: () => map,
+  op: () => op,
+  operation: () => operation,
+  serializerMiddlewareOption: () => serializerMiddlewareOption,
+  sim: () => sim,
+  simAdapter: () => simAdapter,
+  simpleSchemaCacheN: () => simpleSchemaCacheN,
+  simpleSchemaCacheS: () => simpleSchemaCacheS,
+  struct: () => struct,
+  traitsCache: () => traitsCache,
+  translateTraits: () => translateTraits
+});
+var init_schema = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/schema/index.js"() {
+    init_deref();
+    init_getSchemaSerdePlugin();
+    init_ListSchema();
+    init_MapSchema();
+    init_OperationSchema();
+    init_operation();
+    init_ErrorSchema();
+    init_NormalizedSchema();
+    init_Schema();
+    init_SimpleSchema();
+    init_StructureSchema();
+    init_sentinels();
+    init_translateTraits();
+    init_TypeRegistry();
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/schemaLogFilter.js
+function schemaLogFilter(schema, data3) {
+  if (data3 == null) {
+    return data3;
+  }
+  const ns = NormalizedSchema.of(schema);
+  if (ns.getMergedTraits().sensitive) {
+    return SENSITIVE_STRING;
+  }
+  if (ns.isListSchema()) {
+    const isSensitive = !!ns.getValueSchema().getMergedTraits().sensitive;
+    if (isSensitive) {
+      return SENSITIVE_STRING;
+    }
+  } else if (ns.isMapSchema()) {
+    const isSensitive = !!ns.getKeySchema().getMergedTraits().sensitive || !!ns.getValueSchema().getMergedTraits().sensitive;
+    if (isSensitive) {
+      return SENSITIVE_STRING;
+    }
+  } else if (ns.isStructSchema() && typeof data3 === "object") {
+    const object = data3;
+    const newObject = {};
+    for (const [member2, memberNs] of ns.structIterator()) {
+      if (object[member2] != null) {
+        newObject[member2] = schemaLogFilter(memberNs, object[member2]);
+      }
+    }
+    return newObject;
+  }
+  return data3;
+}
+var SENSITIVE_STRING;
+var init_schemaLogFilter = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/schemaLogFilter.js"() {
+    init_schema();
+    SENSITIVE_STRING = "***SensitiveInformation***";
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/command.js
+var import_types2, Command2, ClassBuilder;
+var init_command = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/command.js"() {
+    import_types2 = __toESM(require_dist_cjs());
+    init_MiddlewareStack();
+    init_schemaLogFilter();
+    Command2 = class {
+      middlewareStack = constructStack();
+      schema;
+      static classBuilder() {
+        return new ClassBuilder();
+      }
+      resolveMiddlewareWithContext(clientStack, configuration, options, { middlewareFn, clientName, commandName, inputFilterSensitiveLog, outputFilterSensitiveLog, smithyContext, additionalContext, CommandCtor }) {
+        for (const mw of middlewareFn.bind(this)(CommandCtor, clientStack, configuration, options)) {
+          this.middlewareStack.use(mw);
+        }
+        const stack = clientStack.concat(this.middlewareStack);
+        const { logger: logger2 } = configuration;
+        const handlerExecutionContext = {
+          logger: logger2,
+          clientName,
+          commandName,
+          inputFilterSensitiveLog,
+          outputFilterSensitiveLog,
+          [import_types2.SMITHY_CONTEXT_KEY]: {
+            commandInstance: this,
+            ...smithyContext
+          },
+          ...additionalContext
+        };
+        const { requestHandler } = configuration;
+        let requestOptions = options ?? {};
+        if (smithyContext.eventStream) {
+          requestOptions = {
+            isEventStream: true,
+            ...requestOptions
+          };
+        }
+        return stack.resolve((request) => requestHandler.handle(request.request, requestOptions), handlerExecutionContext);
+      }
+    };
+    ClassBuilder = class {
+      _init = () => {
+      };
+      _ep = {};
+      _middlewareFn = () => [];
+      _commandName = "";
+      _clientName = "";
+      _additionalContext = {};
+      _smithyContext = {};
+      _inputFilterSensitiveLog = void 0;
+      _outputFilterSensitiveLog = void 0;
+      _serializer = null;
+      _deserializer = null;
+      _operationSchema;
+      init(cb) {
+        this._init = cb;
+      }
+      ep(endpointParameterInstructions) {
+        this._ep = endpointParameterInstructions;
+        return this;
+      }
+      m(middlewareSupplier) {
+        this._middlewareFn = middlewareSupplier;
+        return this;
+      }
+      s(service, operation2, smithyContext = {}) {
+        this._smithyContext = {
+          service,
+          operation: operation2,
+          ...smithyContext
+        };
+        return this;
+      }
+      c(additionalContext = {}) {
+        this._additionalContext = additionalContext;
+        return this;
+      }
+      n(clientName, commandName) {
+        this._clientName = clientName;
+        this._commandName = commandName;
+        return this;
+      }
+      f(inputFilter = (_) => _, outputFilter = (_) => _) {
+        this._inputFilterSensitiveLog = inputFilter;
+        this._outputFilterSensitiveLog = outputFilter;
+        return this;
+      }
+      ser(serializer) {
+        this._serializer = serializer;
+        return this;
+      }
+      de(deserializer) {
+        this._deserializer = deserializer;
+        return this;
+      }
+      sc(operation2) {
+        this._operationSchema = operation2;
+        this._smithyContext.operationSchema = operation2;
+        return this;
+      }
+      build() {
+        const closure = this;
+        let CommandRef;
+        return CommandRef = class extends Command2 {
+          input;
+          static getEndpointParameterInstructions() {
+            return closure._ep;
+          }
+          constructor(...[input]) {
+            super();
+            this.input = input ?? {};
+            closure._init(this);
+            this.schema = closure._operationSchema;
+          }
+          resolveMiddleware(stack, configuration, options) {
+            const op2 = closure._operationSchema;
+            const input = op2?.[4] ?? op2?.input;
+            const output = op2?.[5] ?? op2?.output;
+            return this.resolveMiddlewareWithContext(stack, configuration, options, {
+              CommandCtor: CommandRef,
+              middlewareFn: closure._middlewareFn,
+              clientName: closure._clientName,
+              commandName: closure._commandName,
+              inputFilterSensitiveLog: closure._inputFilterSensitiveLog ?? (op2 ? schemaLogFilter.bind(null, input) : (_) => _),
+              outputFilterSensitiveLog: closure._outputFilterSensitiveLog ?? (op2 ? schemaLogFilter.bind(null, output) : (_) => _),
+              smithyContext: closure._smithyContext,
+              additionalContext: closure._additionalContext
+            });
+          }
+          serialize = closure._serializer;
+          deserialize = closure._deserializer;
+        };
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/constants.js
+var SENSITIVE_STRING2;
+var init_constants = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/constants.js"() {
+    SENSITIVE_STRING2 = "***SensitiveInformation***";
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/create-aggregated-client.js
+var createAggregatedClient;
+var init_create_aggregated_client = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/create-aggregated-client.js"() {
+    createAggregatedClient = (commands5, Client3, options) => {
+      for (const [command, CommandCtor] of Object.entries(commands5)) {
+        const methodImpl = async function(args, optionsOrCb, cb) {
+          const command2 = new CommandCtor(args);
+          if (typeof optionsOrCb === "function") {
+            this.send(command2, optionsOrCb);
+          } else if (typeof cb === "function") {
+            if (typeof optionsOrCb !== "object")
+              throw new Error(`Expected http options but got ${typeof optionsOrCb}`);
+            this.send(command2, optionsOrCb || {}, cb);
+          } else {
+            return this.send(command2, optionsOrCb);
+          }
+        };
+        const methodName = (command[0].toLowerCase() + command.slice(1)).replace(/Command$/, "");
+        Client3.prototype[methodName] = methodImpl;
+      }
+      const { paginators = {}, waiters = {} } = options ?? {};
+      for (const [paginatorName, paginatorFn] of Object.entries(paginators)) {
+        if (Client3.prototype[paginatorName] === void 0) {
+          Client3.prototype[paginatorName] = function(commandInput = {}, paginationConfiguration, ...rest) {
+            return paginatorFn({
+              ...paginationConfiguration,
+              client: this
+            }, commandInput, ...rest);
+          };
+        }
+      }
+      for (const [waiterName, waiterFn] of Object.entries(waiters)) {
+        if (Client3.prototype[waiterName] === void 0) {
+          Client3.prototype[waiterName] = async function(commandInput = {}, waiterConfiguration, ...rest) {
+            let config = waiterConfiguration;
+            if (typeof waiterConfiguration === "number") {
+              config = {
+                maxWaitTime: waiterConfiguration
+              };
+            }
+            return waiterFn({
+              ...config,
+              client: this
+            }, commandInput, ...rest);
+          };
+        }
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/exceptions.js
+var ServiceException, decorateServiceException;
+var init_exceptions = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/exceptions.js"() {
+    ServiceException = class _ServiceException extends Error {
+      $fault;
+      $response;
+      $retryable;
+      $metadata;
+      constructor(options) {
+        super(options.message);
+        Object.setPrototypeOf(this, Object.getPrototypeOf(this).constructor.prototype);
+        this.name = options.name;
+        this.$fault = options.$fault;
+        this.$metadata = options.$metadata;
+      }
+      static isInstance(value) {
+        if (!value)
+          return false;
+        const candidate = value;
+        return _ServiceException.prototype.isPrototypeOf(candidate) || Boolean(candidate.$fault) && Boolean(candidate.$metadata) && (candidate.$fault === "client" || candidate.$fault === "server");
+      }
+      static [Symbol.hasInstance](instance) {
+        if (!instance)
+          return false;
+        const candidate = instance;
+        if (this === _ServiceException) {
+          return _ServiceException.isInstance(instance);
+        }
+        if (_ServiceException.isInstance(instance)) {
+          if (candidate.name && this.name) {
+            return this.prototype.isPrototypeOf(instance) || candidate.name === this.name;
+          }
+          return this.prototype.isPrototypeOf(instance);
+        }
+        return false;
+      }
+    };
+    decorateServiceException = (exception, additions = {}) => {
+      Object.entries(additions).filter(([, v]) => v !== void 0).forEach(([k5, v]) => {
+        if (exception[k5] == void 0 || exception[k5] === "") {
+          exception[k5] = v;
+        }
+      });
+      const message = exception.message || exception.Message || "UnknownError";
+      exception.message = message;
+      delete exception.Message;
+      return exception;
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/default-error-handler.js
+var throwDefaultError, withBaseException, deserializeMetadata;
+var init_default_error_handler = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/default-error-handler.js"() {
+    init_exceptions();
+    throwDefaultError = ({ output, parsedBody, exceptionCtor, errorCode }) => {
+      const $metadata = deserializeMetadata(output);
+      const statusCode = $metadata.httpStatusCode ? $metadata.httpStatusCode + "" : void 0;
+      const response = new exceptionCtor({
+        name: parsedBody?.code || parsedBody?.Code || errorCode || statusCode || "UnknownError",
+        $fault: "client",
+        $metadata
+      });
+      throw decorateServiceException(response, parsedBody);
+    };
+    withBaseException = (ExceptionCtor) => {
+      return ({ output, parsedBody, errorCode }) => {
+        throwDefaultError({ output, parsedBody, exceptionCtor: ExceptionCtor, errorCode });
+      };
+    };
+    deserializeMetadata = (output) => ({
+      httpStatusCode: output.statusCode,
+      requestId: output.headers["x-amzn-requestid"] ?? output.headers["x-amzn-request-id"] ?? output.headers["x-amz-request-id"],
+      extendedRequestId: output.headers["x-amz-id-2"],
+      cfId: output.headers["x-amz-cf-id"]
+    });
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/defaults-mode.js
+var loadConfigsForDefaultMode;
+var init_defaults_mode = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/defaults-mode.js"() {
+    loadConfigsForDefaultMode = (mode) => {
+      switch (mode) {
+        case "standard":
+          return {
+            retryMode: "standard",
+            connectionTimeout: 3100
+          };
+        case "in-region":
+          return {
+            retryMode: "standard",
+            connectionTimeout: 1100
+          };
+        case "cross-region":
+          return {
+            retryMode: "standard",
+            connectionTimeout: 3100
+          };
+        case "mobile":
+          return {
+            retryMode: "standard",
+            connectionTimeout: 3e4
+          };
+        default:
+          return {};
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/emitWarningIfUnsupportedVersion.js
+var warningEmitted, emitWarningIfUnsupportedVersion2;
+var init_emitWarningIfUnsupportedVersion2 = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/emitWarningIfUnsupportedVersion.js"() {
+    warningEmitted = false;
+    emitWarningIfUnsupportedVersion2 = (version) => {
+      if (version && !warningEmitted && parseInt(version.substring(1, version.indexOf("."))) < 16) {
+        warningEmitted = true;
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/checksum.js
+var import_types3, knownAlgorithms, getChecksumConfiguration, resolveChecksumRuntimeConfig;
+var init_checksum = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/checksum.js"() {
+    import_types3 = __toESM(require_dist_cjs());
+    knownAlgorithms = Object.values(import_types3.AlgorithmId);
+    getChecksumConfiguration = (runtimeConfig) => {
+      const checksumAlgorithms = [];
+      for (const id in import_types3.AlgorithmId) {
+        const algorithmId = import_types3.AlgorithmId[id];
+        if (runtimeConfig[algorithmId] === void 0) {
+          continue;
+        }
+        checksumAlgorithms.push({
+          algorithmId: () => algorithmId,
+          checksumConstructor: () => runtimeConfig[algorithmId]
+        });
+      }
+      for (const [id, ChecksumCtor] of Object.entries(runtimeConfig.checksumAlgorithms ?? {})) {
+        checksumAlgorithms.push({
+          algorithmId: () => id,
+          checksumConstructor: () => ChecksumCtor
+        });
+      }
+      return {
+        addChecksumAlgorithm(algo) {
+          runtimeConfig.checksumAlgorithms = runtimeConfig.checksumAlgorithms ?? {};
+          const id = algo.algorithmId();
+          const ctor = algo.checksumConstructor();
+          if (knownAlgorithms.includes(id)) {
+            runtimeConfig.checksumAlgorithms[id.toUpperCase()] = ctor;
+          } else {
+            runtimeConfig.checksumAlgorithms[id] = ctor;
+          }
+          checksumAlgorithms.push(algo);
+        },
+        checksumAlgorithms() {
+          return checksumAlgorithms;
+        }
+      };
+    };
+    resolveChecksumRuntimeConfig = (clientConfig) => {
+      const runtimeConfig = {};
+      clientConfig.checksumAlgorithms().forEach((checksumAlgorithm) => {
+        const id = checksumAlgorithm.algorithmId();
+        if (knownAlgorithms.includes(id)) {
+          runtimeConfig[id] = checksumAlgorithm.checksumConstructor();
+        }
+      });
+      return runtimeConfig;
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/retry.js
+var getRetryConfiguration, resolveRetryRuntimeConfig;
+var init_retry = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/retry.js"() {
+    getRetryConfiguration = (runtimeConfig) => {
+      return {
+        setRetryStrategy(retryStrategy) {
+          runtimeConfig.retryStrategy = retryStrategy;
+        },
+        retryStrategy() {
+          return runtimeConfig.retryStrategy;
+        }
+      };
+    };
+    resolveRetryRuntimeConfig = (retryStrategyConfiguration) => {
+      const runtimeConfig = {};
+      runtimeConfig.retryStrategy = retryStrategyConfiguration.retryStrategy();
+      return runtimeConfig;
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/defaultExtensionConfiguration.js
+var getDefaultExtensionConfiguration, getDefaultClientConfiguration, resolveDefaultRuntimeConfig;
+var init_defaultExtensionConfiguration = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/defaultExtensionConfiguration.js"() {
+    init_checksum();
+    init_retry();
+    getDefaultExtensionConfiguration = (runtimeConfig) => {
+      return Object.assign(getChecksumConfiguration(runtimeConfig), getRetryConfiguration(runtimeConfig));
+    };
+    getDefaultClientConfiguration = getDefaultExtensionConfiguration;
+    resolveDefaultRuntimeConfig = (config) => {
+      return Object.assign(resolveChecksumRuntimeConfig(config), resolveRetryRuntimeConfig(config));
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-array-if-single-item.js
+var getArrayIfSingleItem;
+var init_get_array_if_single_item = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-array-if-single-item.js"() {
+    getArrayIfSingleItem = (mayBeArray) => Array.isArray(mayBeArray) ? mayBeArray : [mayBeArray];
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-value-from-text-node.js
+var getValueFromTextNode;
+var init_get_value_from_text_node = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-value-from-text-node.js"() {
+    getValueFromTextNode = (obj) => {
+      const textNodeName = "#text";
+      for (const key in obj) {
+        if (obj.hasOwnProperty(key) && obj[key][textNodeName] !== void 0) {
+          obj[key] = obj[key][textNodeName];
+        } else if (typeof obj[key] === "object" && obj[key] !== null) {
+          obj[key] = getValueFromTextNode(obj[key]);
+        }
+      }
+      return obj;
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/is-serializable-header-value.js
+var isSerializableHeaderValue;
+var init_is_serializable_header_value = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/is-serializable-header-value.js"() {
+    isSerializableHeaderValue = (value) => {
+      return value != null;
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/NoOpLogger.js
+var NoOpLogger;
+var init_NoOpLogger = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/NoOpLogger.js"() {
+    NoOpLogger = class {
+      trace() {
+      }
+      debug() {
+      }
+      info() {
+      }
+      warn() {
+      }
+      error() {
+      }
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/object-mapping.js
+function map2(arg0, arg1, arg2) {
+  let target;
+  let filter;
+  let instructions;
+  if (typeof arg1 === "undefined" && typeof arg2 === "undefined") {
+    target = {};
+    instructions = arg0;
+  } else {
+    target = arg0;
+    if (typeof arg1 === "function") {
+      filter = arg1;
+      instructions = arg2;
+      return mapWithFilter(target, filter, instructions);
+    } else {
+      instructions = arg1;
+    }
+  }
+  for (const key of Object.keys(instructions)) {
+    if (!Array.isArray(instructions[key])) {
+      target[key] = instructions[key];
+      continue;
+    }
+    applyInstruction(target, null, instructions, key);
+  }
+  return target;
+}
+var convertMap, take, mapWithFilter, applyInstruction, nonNullish, pass;
+var init_object_mapping = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/object-mapping.js"() {
+    convertMap = (target) => {
+      const output = {};
+      for (const [k5, v] of Object.entries(target || {})) {
+        output[k5] = [, v];
+      }
+      return output;
+    };
+    take = (source, instructions) => {
+      const out = {};
+      for (const key in instructions) {
+        applyInstruction(out, source, instructions, key);
+      }
+      return out;
+    };
+    mapWithFilter = (target, filter, instructions) => {
+      return map2(target, Object.entries(instructions).reduce((_instructions, [key, value]) => {
+        if (Array.isArray(value)) {
+          _instructions[key] = value;
+        } else {
+          if (typeof value === "function") {
+            _instructions[key] = [filter, value()];
+          } else {
+            _instructions[key] = [filter, value];
+          }
+        }
+        return _instructions;
+      }, {}));
+    };
+    applyInstruction = (target, source, instructions, targetKey) => {
+      if (source !== null) {
+        let instruction = instructions[targetKey];
+        if (typeof instruction === "function") {
+          instruction = [, instruction];
+        }
+        const [filter2 = nonNullish, valueFn = pass, sourceKey = targetKey] = instruction;
+        if (typeof filter2 === "function" && filter2(source[sourceKey]) || typeof filter2 !== "function" && !!filter2) {
+          target[targetKey] = valueFn(source[sourceKey]);
+        }
+        return;
+      }
+      let [filter, value] = instructions[targetKey];
+      if (typeof value === "function") {
+        let _value;
+        const defaultFilterPassed = filter === void 0 && (_value = value()) != null;
+        const customFilterPassed = typeof filter === "function" && !!filter(void 0) || typeof filter !== "function" && !!filter;
+        if (defaultFilterPassed) {
+          target[targetKey] = _value;
+        } else if (customFilterPassed) {
+          target[targetKey] = value();
+        }
+      } else {
+        const defaultFilterPassed = filter === void 0 && value != null;
+        const customFilterPassed = typeof filter === "function" && !!filter(value) || typeof filter !== "function" && !!filter;
+        if (defaultFilterPassed || customFilterPassed) {
+          target[targetKey] = value;
+        }
+      }
+    };
+    nonNullish = (_) => _ != null;
+    pass = (_) => _;
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/ser-utils.js
+var serializeFloat, serializeDateTime;
+var init_ser_utils = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/ser-utils.js"() {
+    serializeFloat = (value) => {
+      if (value !== value) {
+        return "NaN";
+      }
+      switch (value) {
+        case Infinity:
+          return "Infinity";
+        case -Infinity:
+          return "-Infinity";
+        default:
+          return value;
+      }
+    };
+    serializeDateTime = (date2) => date2.toISOString().replace(".000Z", "Z");
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/serde-json.js
+var _json;
+var init_serde_json = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/serde-json.js"() {
+    _json = (obj) => {
+      if (obj == null) {
+        return {};
+      }
+      if (Array.isArray(obj)) {
+        return obj.filter((_) => _ != null).map(_json);
+      }
+      if (typeof obj === "object") {
+        const target = {};
+        for (const key of Object.keys(obj)) {
+          if (obj[key] == null) {
+            continue;
+          }
+          target[key] = _json(obj[key]);
+        }
+        return target;
+      }
+      return obj;
+    };
+  }
+});
+
+// node_modules/@smithy/core/dist-es/submodules/client/index.js
+var client_exports = {};
+__export(client_exports, {
+  AlgorithmId: () => import_types3.AlgorithmId,
+  Client: () => Client,
+  Command: () => Command2,
+  NoOpLogger: () => NoOpLogger,
+  SENSITIVE_STRING: () => SENSITIVE_STRING2,
+  ServiceException: () => ServiceException,
+  WaiterState: () => WaiterState,
+  _json: () => _json,
+  checkExceptions: () => checkExceptions,
+  constructStack: () => constructStack,
+  convertMap: () => convertMap,
+  createAggregatedClient: () => createAggregatedClient,
+  createWaiter: () => createWaiter,
+  decorateServiceException: () => decorateServiceException,
+  emitWarningIfUnsupportedVersion: () => emitWarningIfUnsupportedVersion2,
+  getArrayIfSingleItem: () => getArrayIfSingleItem,
+  getChecksumConfiguration: () => getChecksumConfiguration,
+  getDefaultClientConfiguration: () => getDefaultClientConfiguration,
+  getDefaultExtensionConfiguration: () => getDefaultExtensionConfiguration,
+  getRetryConfiguration: () => getRetryConfiguration,
+  getSmithyContext: () => getSmithyContext,
+  getValueFromTextNode: () => getValueFromTextNode,
+  invalidFunction: () => invalidFunction,
+  invalidProvider: () => invalidProvider,
+  isSerializableHeaderValue: () => isSerializableHeaderValue,
+  loadConfigsForDefaultMode: () => loadConfigsForDefaultMode,
+  map: () => map2,
+  normalizeProvider: () => normalizeProvider,
+  resolveChecksumRuntimeConfig: () => resolveChecksumRuntimeConfig,
+  resolveDefaultRuntimeConfig: () => resolveDefaultRuntimeConfig,
+  resolveRetryRuntimeConfig: () => resolveRetryRuntimeConfig,
+  schemaLogFilter: () => schemaLogFilter,
+  serializeDateTime: () => serializeDateTime,
+  serializeFloat: () => serializeFloat,
+  take: () => take,
+  throwDefaultError: () => throwDefaultError,
+  waiterServiceDefaults: () => waiterServiceDefaults,
+  withBaseException: () => withBaseException
+});
+var init_client2 = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/client/index.js"() {
+    init_MiddlewareStack();
+    init_transport();
+    init_transport();
+    init_invalidFunction();
+    init_invalidProvider();
+    init_createWaiter();
+    init_waiter();
+    init_client();
+    init_command();
+    init_constants();
+    init_create_aggregated_client();
+    init_default_error_handler();
+    init_defaults_mode();
+    init_emitWarningIfUnsupportedVersion2();
+    init_exceptions();
+    init_defaultExtensionConfiguration();
+    init_checksum();
+    init_retry();
+    init_get_array_if_single_item();
+    init_get_value_from_text_node();
+    init_is_serializable_header_value();
+    init_NoOpLogger();
+    init_object_mapping();
+    init_schemaLogFilter();
+    init_ser_utils();
+    init_serde_json();
   }
 });
 
@@ -20331,10 +22067,10 @@ var init_toUint8Array = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/serde/middleware-serde/deserializerMiddleware.js
-var deserializerMiddleware, findHeader;
+var deserializerMiddleware, findHeader2;
 var init_deserializerMiddleware = __esm({
   "node_modules/@smithy/core/dist-es/submodules/serde/middleware-serde/deserializerMiddleware.js"() {
-    init_protocols();
+    init_transport();
     deserializerMiddleware = (options, deserializer) => (next, context) => async (args) => {
       const { response } = await next(args);
       try {
@@ -20372,9 +22108,9 @@ var init_deserializerMiddleware = __esm({
               const headerEntries = Object.entries(headers);
               error3.$metadata = {
                 httpStatusCode: response.statusCode,
-                requestId: findHeader(/^x-[\w-]+-request-?id$/, headerEntries),
-                extendedRequestId: findHeader(/^x-[\w-]+-id-2$/, headerEntries),
-                cfId: findHeader(/^x-[\w-]+-cf-id$/, headerEntries)
+                requestId: findHeader2(/^x-[\w-]+-request-?id$/, headerEntries),
+                extendedRequestId: findHeader2(/^x-[\w-]+-id-2$/, headerEntries),
+                cfId: findHeader2(/^x-[\w-]+-cf-id$/, headerEntries)
               };
             }
           } catch (e5) {
@@ -20383,7 +22119,7 @@ var init_deserializerMiddleware = __esm({
         throw error3;
       }
     };
-    findHeader = (pattern, headers) => {
+    findHeader2 = (pattern, headers) => {
       return (headers.find(([k5]) => {
         return k5.match(pattern);
       }) || [void 0, void 0])[1];
@@ -20653,27 +22389,27 @@ var init_getSSOTokenFromFile = __esm({
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/constants.js
 var CONFIG_PREFIX_SEPARATOR;
-var init_constants = __esm({
+var init_constants2 = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/constants.js"() {
     CONFIG_PREFIX_SEPARATOR = ".";
   }
 });
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getConfigData.js
-var import_types2, getConfigData;
+var import_types4, getConfigData;
 var init_getConfigData = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getConfigData.js"() {
-    import_types2 = __toESM(require_dist_cjs());
-    init_constants();
+    import_types4 = __toESM(require_dist_cjs());
+    init_constants2();
     getConfigData = (data3) => Object.entries(data3).filter(([key]) => {
       const indexOfSeparator = key.indexOf(CONFIG_PREFIX_SEPARATOR);
       if (indexOfSeparator === -1) {
         return false;
       }
-      return Object.values(import_types2.IniSectionType).includes(key.substring(0, indexOfSeparator));
+      return Object.values(import_types4.IniSectionType).includes(key.substring(0, indexOfSeparator));
     }).reduce((acc, [key, value]) => {
       const indexOfSeparator = key.indexOf(CONFIG_PREFIX_SEPARATOR);
-      const updatedKey = key.substring(0, indexOfSeparator) === import_types2.IniSectionType.PROFILE ? key.substring(indexOfSeparator + 1) : key;
+      const updatedKey = key.substring(0, indexOfSeparator) === import_types4.IniSectionType.PROFILE ? key.substring(indexOfSeparator + 1) : key;
       acc[updatedKey] = value;
       return acc;
     }, {
@@ -20705,11 +22441,11 @@ var init_getCredentialsFilepath = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/parseIni.js
-var import_types3, prefixKeyRegex, profileNameBlockList, parseIni;
+var import_types5, prefixKeyRegex, profileNameBlockList, parseIni;
 var init_parseIni = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/parseIni.js"() {
-    import_types3 = __toESM(require_dist_cjs());
-    init_constants();
+    import_types5 = __toESM(require_dist_cjs());
+    init_constants2();
     prefixKeyRegex = /^([\w-]+)\s(["'])?([\w-@\+\.%:/]+)\2$/;
     profileNameBlockList = ["__proto__", "profile __proto__"];
     parseIni = (iniData) => {
@@ -20726,7 +22462,7 @@ var init_parseIni = __esm({
           const matches = prefixKeyRegex.exec(sectionName);
           if (matches) {
             const [, prefix, , name] = matches;
-            if (Object.values(import_types3.IniSectionType).includes(prefix)) {
+            if (Object.values(import_types5.IniSectionType).includes(prefix)) {
               currentSection = [prefix, name].join(CONFIG_PREFIX_SEPARATOR);
             }
           } else {
@@ -20767,14 +22503,14 @@ var init_readFile = __esm({
     import_promises2 = require("node:fs/promises");
     filePromises = {};
     fileIntercept = {};
-    readFile2 = (path3, options) => {
-      if (fileIntercept[path3] !== void 0) {
-        return fileIntercept[path3];
+    readFile2 = (path4, options) => {
+      if (fileIntercept[path4] !== void 0) {
+        return fileIntercept[path4];
       }
-      if (!filePromises[path3] || options?.ignoreCache) {
-        filePromises[path3] = (0, import_promises2.readFile)(path3, "utf8");
+      if (!filePromises[path4] || options?.ignoreCache) {
+        filePromises[path4] = (0, import_promises2.readFile)(path4, "utf8");
       }
-      return filePromises[path3];
+      return filePromises[path4];
     };
   }
 });
@@ -20790,7 +22526,7 @@ var init_loadSharedConfigFiles = __esm({
     init_getHomeDir();
     init_parseIni();
     init_readFile();
-    init_constants();
+    init_constants2();
     swallowError = () => ({});
     loadSharedConfigFiles = async (init = {}) => {
       const { filepath = getCredentialsFilepath(), configFilepath = getConfigFilepath() } = init;
@@ -20821,12 +22557,12 @@ var init_loadSharedConfigFiles = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getSsoSessionData.js
-var import_types4, getSsoSessionData;
+var import_types6, getSsoSessionData;
 var init_getSsoSessionData = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getSsoSessionData.js"() {
-    import_types4 = __toESM(require_dist_cjs());
+    import_types6 = __toESM(require_dist_cjs());
     init_loadSharedConfigFiles();
-    getSsoSessionData = (data3) => Object.entries(data3).filter(([key]) => key.startsWith(import_types4.IniSectionType.SSO_SESSION + CONFIG_PREFIX_SEPARATOR)).reduce((acc, [key, value]) => ({ ...acc, [key.substring(key.indexOf(CONFIG_PREFIX_SEPARATOR) + 1)]: value }), {});
+    getSsoSessionData = (data3) => Object.entries(data3).filter(([key]) => key.startsWith(import_types6.IniSectionType.SSO_SESSION + CONFIG_PREFIX_SEPARATOR)).reduce((acc, [key, value]) => ({ ...acc, [key.substring(key.indexOf(CONFIG_PREFIX_SEPARATOR) + 1)]: value }), {});
   }
 });
 
@@ -20886,8 +22622,8 @@ var init_externalDataInterceptor = __esm({
       getFileRecord() {
         return fileIntercept;
       },
-      interceptFile(path3, contents) {
-        fileIntercept[path3] = Promise.resolve(contents);
+      interceptFile(path4, contents) {
+        fileIntercept[path4] = Promise.resolve(contents);
       },
       getTokenRecord() {
         return tokenIntercept;
@@ -20902,11 +22638,11 @@ var init_externalDataInterceptor = __esm({
 // node_modules/@smithy/core/dist-es/submodules/config/node-config-provider/getSelectorName.js
 function getSelectorName(functionString) {
   try {
-    const constants3 = new Set(Array.from(functionString.match(/([A-Z_]){3,}/g) ?? []));
-    constants3.delete("CONFIG");
-    constants3.delete("CONFIG_PREFIX_SEPARATOR");
-    constants3.delete("ENV");
-    return [...constants3].join(", ");
+    const constants4 = new Set(Array.from(functionString.match(/([A-Z_]){3,}/g) ?? []));
+    constants4.delete("CONFIG");
+    constants4.delete("CONFIG_PREFIX_SEPARATOR");
+    constants4.delete("ENV");
+    return [...constants4].join(", ");
   } catch (e5) {
     return functionString;
   }
@@ -21116,7 +22852,7 @@ var init_config = __esm({
 var validRegions, checkRegion;
 var init_checkRegion = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/config-resolver/regionConfig/checkRegion.js"() {
-    init_endpoints();
+    init_transport();
     validRegions = /* @__PURE__ */ new Set();
     checkRegion = (region, check = isValidHostLabel) => {
       if (!validRegions.has(region) && !check(region)) {
@@ -21260,7 +22996,7 @@ var init_getRegionInfo = __esm({
 
 // node_modules/@smithy/core/dist-es/submodules/config/defaults-mode/constants.js
 var AWS_EXECUTION_ENV, AWS_REGION_ENV, AWS_DEFAULT_REGION_ENV, ENV_IMDS_DISABLED, DEFAULTS_MODE_OPTIONS, IMDS_REGION_PATH;
-var init_constants2 = __esm({
+var init_constants3 = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/defaults-mode/constants.js"() {
     AWS_EXECUTION_ENV = "AWS_EXECUTION_ENV";
     AWS_REGION_ENV = "AWS_REGION";
@@ -21296,7 +23032,7 @@ var init_resolveDefaultsModeConfig = __esm({
     init_config();
     init_configLoader();
     init_memoize();
-    init_constants2();
+    init_constants3();
     init_defaultsModeConfig();
     resolveDefaultsModeConfig = ({ region = loadConfig(NODE_REGION_CONFIG_OPTIONS), defaultsMode = loadConfig(NODE_DEFAULTS_MODE_CONFIG_OPTIONS) } = {}) => memoize(async () => {
       const mode = typeof defaultsMode === "function" ? await defaultsMode() : defaultsMode;
@@ -21354,13 +23090,13 @@ var init_resolveDefaultsModeConfig = __esm({
       }
       return { hostname: "169.254.169.254", path: "/" };
     };
-    imdsHttpGet = async ({ hostname, path: path3 }) => {
+    imdsHttpGet = async ({ hostname, path: path4 }) => {
       const { request } = await import("node:http");
       return new Promise((resolve, reject) => {
         const req = request({
           method: "GET",
           hostname: hostname.replace(/^\[(.+)]$/, "$1"),
-          path: path3,
+          path: path4,
           timeout: 1e3,
           signal: AbortSignal.timeout(1e3)
         });
@@ -21453,7 +23189,7 @@ var init_config2 = __esm({
     init_getProfileName();
     init_getSSOTokenFilepath();
     init_getSSOTokenFromFile();
-    init_constants();
+    init_constants2();
     init_loadSharedConfigFiles();
     init_loadSsoSessionData();
     init_parseKnownFiles();
@@ -21609,8 +23345,8 @@ var init_createConfigValueProvider = __esm({
               return endpoint.url.href;
             }
             if ("hostname" in endpoint) {
-              const { protocol, hostname, port, path: path3 } = endpoint;
-              return `${protocol}//${hostname}${port ? ":" + port : ""}${path3}`;
+              const { protocol, hostname, port, path: path4 } = endpoint;
+              return `${protocol}//${hostname}${port ? ":" + port : ""}${path4}`;
             }
           }
           return endpoint;
@@ -21621,34 +23357,10 @@ var init_createConfigValueProvider = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/submodules/endpoints/toEndpointV1.js
-var toEndpointV1;
-var init_toEndpointV1 = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/endpoints/toEndpointV1.js"() {
-    init_protocols();
-    toEndpointV1 = (endpoint) => {
-      if (typeof endpoint === "object") {
-        if ("url" in endpoint) {
-          const v1Endpoint = parseUrl(endpoint.url);
-          if (endpoint.headers) {
-            v1Endpoint.headers = {};
-            for (const name in endpoint.headers) {
-              v1Endpoint.headers[name.toLowerCase()] = endpoint.headers[name].join(", ");
-            }
-          }
-          return v1Endpoint;
-        }
-        return endpoint;
-      }
-      return parseUrl(endpoint);
-    };
-  }
-});
-
 // node_modules/@smithy/core/dist-es/submodules/endpoints/middleware-endpoint/adaptors/toEndpointV1.js
 var init_toEndpointV12 = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/middleware-endpoint/adaptors/toEndpointV1.js"() {
-    init_toEndpointV1();
+    init_transport();
   }
 });
 
@@ -21787,11 +23499,11 @@ function bindGetEndpointPlugin(getEndpointFromConfig2) {
     }
   });
 }
-var serializerMiddlewareOption, endpointMiddlewareOptions;
+var serializerMiddlewareOption2, endpointMiddlewareOptions;
 var init_getEndpointPlugin = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/middleware-endpoint/getEndpointPlugin.js"() {
     init_endpointMiddleware();
-    serializerMiddlewareOption = {
+    serializerMiddlewareOption2 = {
       name: "serializerMiddleware",
       step: "serialize",
       tags: ["SERIALIZER"],
@@ -21803,7 +23515,7 @@ var init_getEndpointPlugin = __esm({
       name: "endpointV2Middleware",
       override: true,
       relation: "before",
-      toMiddleware: serializerMiddlewareOption.name
+      toMiddleware: serializerMiddlewareOption2.name
     };
   }
 });
@@ -21834,7 +23546,7 @@ function bindResolveEndpointConfig(getEndpointFromConfig2) {
 }
 var init_resolveEndpointConfig = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/middleware-endpoint/resolveEndpointConfig.js"() {
-    init_client2();
+    init_transport();
     init_toEndpointV12();
   }
 });
@@ -22049,18 +23761,18 @@ var getAttrPathList;
 var init_getAttrPathList = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/getAttrPathList.js"() {
     init_types2();
-    getAttrPathList = (path3) => {
-      const parts = path3.split(".");
+    getAttrPathList = (path4) => {
+      const parts = path4.split(".");
       const pathList = [];
       for (const part of parts) {
         const squareBracketIndex = part.indexOf("[");
         if (squareBracketIndex !== -1) {
           if (part.indexOf("]") !== part.length - 1) {
-            throw new EndpointError(`Path: '${path3}' does not end with ']'`);
+            throw new EndpointError(`Path: '${path4}' does not end with ']'`);
           }
           const arrayIndex = part.slice(squareBracketIndex + 1, -1);
           if (Number.isNaN(parseInt(arrayIndex))) {
-            throw new EndpointError(`Invalid array index: '${arrayIndex}' in path: '${path3}'`);
+            throw new EndpointError(`Invalid array index: '${arrayIndex}' in path: '${path4}'`);
           }
           if (squareBracketIndex !== 0) {
             pathList.push(part.slice(0, squareBracketIndex));
@@ -22081,9 +23793,9 @@ var init_getAttr = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/getAttr.js"() {
     init_types2();
     init_getAttrPathList();
-    getAttr = (value, path3) => getAttrPathList(path3).reduce((acc, index) => {
+    getAttr = (value, path4) => getAttrPathList(path4).reduce((acc, index) => {
       if (typeof acc !== "object") {
-        throw new EndpointError(`Index '${index}' in '${path3}' not found in '${JSON.stringify(value)}'`);
+        throw new EndpointError(`Index '${index}' in '${path4}' not found in '${JSON.stringify(value)}'`);
       } else if (Array.isArray(acc)) {
         const i5 = parseInt(index);
         return acc[i5 < 0 ? acc.length + i5 : i5];
@@ -22098,26 +23810,6 @@ var isSet;
 var init_isSet = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/isSet.js"() {
     isSet = (value) => value != null;
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/isValidHostLabel.js
-var VALID_HOST_LABEL_REGEX, isValidHostLabel;
-var init_isValidHostLabel = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/isValidHostLabel.js"() {
-    VALID_HOST_LABEL_REGEX = new RegExp(`^(?!.*-$)(?!-)[a-zA-Z0-9-]{1,63}$`);
-    isValidHostLabel = (value, allowSubDomains = false) => {
-      if (!allowSubDomains) {
-        return VALID_HOST_LABEL_REGEX.test(value);
-      }
-      const labels = value.split(".");
-      for (const label of labels) {
-        if (!isValidHostLabel(label)) {
-          return false;
-        }
-      }
-      return true;
-    };
   }
 });
 
@@ -22148,14 +23840,14 @@ var init_isIpAddress = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/parseURL.js
-var import_types10, DEFAULT_PORTS, parseURL;
+var import_types12, DEFAULT_PORTS, parseURL;
 var init_parseURL = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/parseURL.js"() {
-    import_types10 = __toESM(require_dist_cjs());
+    import_types12 = __toESM(require_dist_cjs());
     init_isIpAddress();
     DEFAULT_PORTS = {
-      [import_types10.EndpointURLScheme.HTTP]: 80,
-      [import_types10.EndpointURLScheme.HTTPS]: 443
+      [import_types12.EndpointURLScheme.HTTP]: 80,
+      [import_types12.EndpointURLScheme.HTTPS]: 443
     };
     parseURL = (value) => {
       const whatwgURL = (() => {
@@ -22164,8 +23856,8 @@ var init_parseURL = __esm({
             return value;
           }
           if (typeof value === "object" && "hostname" in value) {
-            const { hostname: hostname2, port, protocol: protocol2 = "", path: path3 = "", query = {} } = value;
-            const url = new URL(`${protocol2}//${hostname2}${port ? `:${port}` : ""}${path3}`);
+            const { hostname: hostname2, port, protocol: protocol2 = "", path: path4 = "", query = {} } = value;
+            const url = new URL(`${protocol2}//${hostname2}${port ? `:${port}` : ""}${path4}`);
             url.search = Object.entries(query).map(([k5, v]) => `${k5}=${v}`).join("&");
             return url;
           }
@@ -22184,7 +23876,7 @@ var init_parseURL = __esm({
         return null;
       }
       const scheme = protocol.slice(0, -1);
-      if (!Object.values(import_types10.EndpointURLScheme).includes(scheme)) {
+      if (!Object.values(import_types12.EndpointURLScheme).includes(scheme)) {
         return null;
       }
       const isIp = isIpAddress(hostname);
@@ -22259,7 +23951,7 @@ var init_lib = __esm({
     init_coalesce();
     init_getAttr();
     init_isSet();
-    init_isValidHostLabel();
+    init_transport();
     init_ite();
     init_not();
     init_parseURL();
@@ -22759,12 +24451,12 @@ var init_endpoints = __esm({
     init_endpointMiddleware();
     init_getEndpointPlugin();
     init_resolveEndpointConfig();
-    init_toEndpointV1();
+    init_transport();
     init_BinaryDecisionDiagram();
     init_EndpointCache();
     init_decideEndpoint();
     init_isIpAddress();
-    init_isValidHostLabel();
+    init_transport();
     init_customEndpointFunctions();
     init_resolveEndpoint();
     init_types2();
@@ -22803,23 +24495,23 @@ var init_serializerMiddleware = __esm({
 function getSerdePlugin(config, serializer, deserializer) {
   return {
     applyToStack: (commandStack) => {
-      commandStack.add(deserializerMiddleware(config, deserializer), deserializerMiddlewareOption);
-      commandStack.add(serializerMiddleware(config, serializer), serializerMiddlewareOption2);
+      commandStack.add(deserializerMiddleware(config, deserializer), deserializerMiddlewareOption2);
+      commandStack.add(serializerMiddleware(config, serializer), serializerMiddlewareOption3);
     }
   };
 }
-var deserializerMiddlewareOption, serializerMiddlewareOption2;
+var deserializerMiddlewareOption2, serializerMiddlewareOption3;
 var init_serdePlugin = __esm({
   "node_modules/@smithy/core/dist-es/submodules/serde/middleware-serde/serdePlugin.js"() {
     init_deserializerMiddleware();
     init_serializerMiddleware();
-    deserializerMiddlewareOption = {
+    deserializerMiddlewareOption2 = {
       name: "deserializerMiddleware",
       step: "deserialize",
       tags: ["DESERIALIZER"],
       override: true
     };
-    serializerMiddlewareOption2 = {
+    serializerMiddlewareOption3 = {
       name: "serializerMiddleware",
       step: "serialize",
       tags: ["SERIALIZER"],
@@ -23775,7 +25467,7 @@ __export(serde_exports, {
   createChecksumStream: () => createChecksumStream2,
   dateToUtcString: () => dateToUtcString,
   deserializerMiddleware: () => deserializerMiddleware,
-  deserializerMiddlewareOption: () => deserializerMiddlewareOption,
+  deserializerMiddlewareOption: () => deserializerMiddlewareOption2,
   expectBoolean: () => expectBoolean,
   expectByte: () => expectByte,
   expectFloat32: () => expectFloat32,
@@ -23814,7 +25506,7 @@ __export(serde_exports, {
   quoteHeader: () => quoteHeader,
   sdkStreamMixin: () => sdkStreamMixin2,
   serializerMiddleware: () => serializerMiddleware,
-  serializerMiddlewareOption: () => serializerMiddlewareOption2,
+  serializerMiddlewareOption: () => serializerMiddlewareOption3,
   splitEvery: () => splitEvery,
   splitHeader: () => splitHeader,
   splitStream: () => splitStream2,
@@ -23913,93 +25605,6 @@ var init_SerdeContext = __esm({
       serdeContext;
       setSerdeContext(serdeContext) {
         this.serdeContext = serdeContext;
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/httpRequest.js
-function cloneQuery(query) {
-  return Object.keys(query).reduce((carry, paramName) => {
-    const param = query[paramName];
-    return {
-      ...carry,
-      [paramName]: Array.isArray(param) ? [...param] : param
-    };
-  }, {});
-}
-var HttpRequest;
-var init_httpRequest = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/httpRequest.js"() {
-    HttpRequest = class _HttpRequest {
-      method;
-      protocol;
-      hostname;
-      port;
-      path;
-      query;
-      headers;
-      username;
-      password;
-      fragment;
-      body;
-      constructor(options) {
-        this.method = options.method || "GET";
-        this.hostname = options.hostname || "localhost";
-        this.port = options.port;
-        this.query = options.query || {};
-        this.headers = options.headers || {};
-        this.body = options.body;
-        this.protocol = options.protocol ? options.protocol.slice(-1) !== ":" ? `${options.protocol}:` : options.protocol : "https:";
-        this.path = options.path ? options.path.charAt(0) !== "/" ? `/${options.path}` : options.path : "/";
-        this.username = options.username;
-        this.password = options.password;
-        this.fragment = options.fragment;
-      }
-      static clone(request) {
-        const cloned = new _HttpRequest({
-          ...request,
-          headers: { ...request.headers }
-        });
-        if (cloned.query) {
-          cloned.query = cloneQuery(cloned.query);
-        }
-        return cloned;
-      }
-      static isInstance(request) {
-        if (!request) {
-          return false;
-        }
-        const req = request;
-        return "method" in req && "protocol" in req && "hostname" in req && "path" in req && typeof req["query"] === "object" && typeof req["headers"] === "object";
-      }
-      clone() {
-        return _HttpRequest.clone(this);
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/httpResponse.js
-var HttpResponse;
-var init_httpResponse = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/httpResponse.js"() {
-    HttpResponse = class {
-      statusCode;
-      reason;
-      headers;
-      body;
-      constructor(options) {
-        this.statusCode = options.statusCode;
-        this.reason = options.reason;
-        this.headers = options.headers || {};
-        this.body = options.body;
-      }
-      static isInstance(response) {
-        if (!response)
-          return false;
-        const resp = response;
-        return typeof resp.statusCode === "number" && typeof resp.headers === "object";
       }
     };
   }
@@ -24434,13 +26039,13 @@ function __disposeResources(env2) {
   }
   return next();
 }
-function __rewriteRelativeImportExtension(path3, preserveJsx) {
-  if (typeof path3 === "string" && /^\.\.?\//.test(path3)) {
-    return path3.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m3, tsx, d5, ext, cm) {
+function __rewriteRelativeImportExtension(path4, preserveJsx) {
+  if (typeof path4 === "string" && /^\.\.?\//.test(path4)) {
+    return path4.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m3, tsx, d5, ext, cm) {
       return tsx ? preserveJsx ? ".jsx" : ".js" : d5 && (!ext || !cm) ? m3 : d5 + ext + "." + cm.toLowerCase() + "js";
     });
   }
-  return path3;
+  return path4;
 }
 var extendStatics, __assign, __createBinding, __setModuleDefault, ownKeys, _SuppressedError, tslib_es6_default;
 var init_tslib_es6 = __esm({
@@ -26102,9 +27707,8 @@ var HttpProtocol;
 var init_HttpProtocol = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/HttpProtocol.js"() {
     init_schema();
+    init_transport();
     init_SerdeContext();
-    init_httpRequest();
-    init_httpResponse();
     HttpProtocol = class extends SerdeContext {
       options;
       compositeErrorRegistry;
@@ -26252,10 +27856,10 @@ var init_HttpBindingProtocol = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/HttpBindingProtocol.js"() {
     init_schema();
     init_serde();
+    init_transport();
     init_HttpProtocol();
     init_collect_stream_body();
     init_extended_encode_uri_component();
-    init_httpRequest();
     HttpBindingProtocol = class extends HttpProtocol {
       async serializeRequest(operationSchema, _input, context) {
         const input = _input && typeof _input === "object" ? _input : {};
@@ -26284,11 +27888,11 @@ var init_HttpBindingProtocol = __esm({
           const opTraits = translateTraits(operationSchema.traits);
           if (opTraits.http) {
             request.method = opTraits.http[0];
-            const [path3, search] = opTraits.http[1].split("?");
+            const [path4, search] = opTraits.http[1].split("?");
             if (request.path == "/") {
-              request.path = path3;
+              request.path = path4;
             } else {
-              request.path += path3;
+              request.path += path4;
             }
             const traitSearchParams = new URLSearchParams(search ?? "");
             for (const [key, value] of traitSearchParams) {
@@ -26526,9 +28130,9 @@ var RpcProtocol;
 var init_RpcProtocol = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/RpcProtocol.js"() {
     init_schema();
+    init_transport();
     init_HttpProtocol();
     init_collect_stream_body();
-    init_httpRequest();
     RpcProtocol = class extends HttpProtocol {
       async serializeRequest(operationSchema, _input, context) {
         const serializer = this.serializer;
@@ -26645,7 +28249,7 @@ function requestBuilder(input, context) {
 var RequestBuilder;
 var init_requestBuilder = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/requestBuilder.js"() {
-    init_httpRequest();
+    init_transport();
     init_resolve_path();
     RequestBuilder = class {
       input;
@@ -26689,8 +28293,8 @@ var init_requestBuilder = __esm({
         return this;
       }
       p(memberName, labelValueProvider, uriLabel, isGreedyLabel) {
-        this.resolvePathStack.push((path3) => {
-          this.path = resolvedPath(path3, this.input, memberName, labelValueProvider, uriLabel, isGreedyLabel);
+        this.resolvePathStack.push((path4) => {
+          this.path = resolvedPath(path4, this.input, memberName, labelValueProvider, uriLabel, isGreedyLabel);
         });
         return this;
       }
@@ -26986,15 +28590,15 @@ var init_HttpInterceptingShapeSerializer = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/Field.js
-var import_types20, Field;
+var import_types22, Field;
 var init_Field = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/Field.js"() {
-    import_types20 = __toESM(require_dist_cjs());
+    import_types22 = __toESM(require_dist_cjs());
     Field = class {
       name;
       kind;
       values;
-      constructor({ name, kind = import_types20.FieldPosition.HEADER, values = [] }) {
+      constructor({ name, kind = import_types22.FieldPosition.HEADER, values = [] }) {
         this.name = name;
         this.kind = kind;
         this.values = values;
@@ -27042,16 +28646,6 @@ var init_Fields = __esm({
         return Object.values(this.entries).filter((field) => field.kind === kind);
       }
     };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/isValidHostname.js
-function isValidHostname(hostname) {
-  const hostPattern = /^[a-z0-9][a-z0-9\.\-]*[a-z0-9]$/;
-  return hostPattern.test(hostname);
-}
-var init_isValidHostname = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/isValidHostname.js"() {
   }
 });
 
@@ -27109,7 +28703,7 @@ function contentLengthMiddleware(bodyLengthChecker) {
 var CONTENT_LENGTH_HEADER, contentLengthMiddlewareOptions, getContentLengthPlugin;
 var init_contentLengthMiddleware = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/middleware-content-length/contentLengthMiddleware.js"() {
-    init_httpRequest();
+    init_transport();
     CONTENT_LENGTH_HEADER = "content-length";
     contentLengthMiddlewareOptions = {
       step: "build",
@@ -27169,58 +28763,6 @@ var init_buildQueryString = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/submodules/protocols/querystring-parser/parseQueryString.js
-function parseQueryString(querystring) {
-  const query = {};
-  querystring = querystring.replace(/^\?/, "");
-  if (querystring) {
-    for (const pair of querystring.split("&")) {
-      let [key, value = null] = pair.split("=");
-      key = decodeURIComponent(key);
-      if (value) {
-        value = decodeURIComponent(value);
-      }
-      if (!(key in query)) {
-        query[key] = value;
-      } else if (Array.isArray(query[key])) {
-        query[key].push(value);
-      } else {
-        query[key] = [query[key], value];
-      }
-    }
-  }
-  return query;
-}
-var init_parseQueryString = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/protocols/querystring-parser/parseQueryString.js"() {
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/protocols/url-parser/parseUrl.js
-var parseUrl;
-var init_parseUrl = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/protocols/url-parser/parseUrl.js"() {
-    init_parseQueryString();
-    parseUrl = (url) => {
-      if (typeof url === "string") {
-        return parseUrl(new URL(url));
-      }
-      const { hostname, pathname, port, protocol, search } = url;
-      let query;
-      if (search) {
-        query = parseQueryString(search);
-      }
-      return {
-        hostname,
-        port: port ? parseInt(port) : void 0,
-        protocol,
-        path: pathname,
-        query
-      };
-    };
-  }
-});
-
 // node_modules/@smithy/core/dist-es/submodules/protocols/index.js
 var protocols_exports = {};
 __export(protocols_exports, {
@@ -27271,1546 +28813,16 @@ var init_protocols = __esm({
     init_SerdeContext();
     init_Field();
     init_Fields();
-    init_httpRequest();
-    init_httpResponse();
-    init_isValidHostname();
+    init_transport();
+    init_transport();
+    init_transport();
     init_httpExtensionConfiguration();
     init_contentLengthMiddleware();
     init_escape_uri();
     init_escape_uri_path();
     init_buildQueryString();
-    init_parseQueryString();
-    init_parseUrl();
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/operation.js
-var operation;
-var init_operation = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/operation.js"() {
-    operation = (namespace, name, traits, input, output) => ({
-      name,
-      namespace,
-      traits,
-      input,
-      output
-    });
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaDeserializationMiddleware.js
-var schemaDeserializationMiddleware, findHeader2;
-var init_schemaDeserializationMiddleware = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaDeserializationMiddleware.js"() {
-    init_client2();
-    init_protocols();
-    init_operation();
-    schemaDeserializationMiddleware = (config) => (next, context) => async (args) => {
-      const { response } = await next(args);
-      const { operationSchema } = getSmithyContext(context);
-      const [, ns, n3, t, i5, o2] = operationSchema ?? [];
-      try {
-        const parsed = await config.protocol.deserializeResponse(operation(ns, n3, t, i5, o2), {
-          ...config,
-          ...context
-        }, response);
-        return {
-          response,
-          output: parsed
-        };
-      } catch (error3) {
-        Object.defineProperty(error3, "$response", {
-          value: response,
-          enumerable: false,
-          writable: false,
-          configurable: false
-        });
-        if (!("$metadata" in error3)) {
-          const hint = `Deserialization error: to see the raw response, inspect the hidden field {error}.$response on this object.`;
-          try {
-            error3.message += "\n  " + hint;
-          } catch (e5) {
-            if (!context.logger || context.logger?.constructor?.name === "NoOpLogger") {
-              console.warn(hint);
-            } else {
-              context.logger?.warn?.(hint);
-            }
-          }
-          if (typeof error3.$responseBodyText !== "undefined") {
-            if (error3.$response) {
-              error3.$response.body = error3.$responseBodyText;
-            }
-          }
-          try {
-            if (HttpResponse.isInstance(response)) {
-              const { headers = {} } = response;
-              const headerEntries = Object.entries(headers);
-              error3.$metadata = {
-                httpStatusCode: response.statusCode,
-                requestId: findHeader2(/^x-[\w-]+-request-?id$/, headerEntries),
-                extendedRequestId: findHeader2(/^x-[\w-]+-id-2$/, headerEntries),
-                cfId: findHeader2(/^x-[\w-]+-cf-id$/, headerEntries)
-              };
-            }
-          } catch (e5) {
-          }
-        }
-        throw error3;
-      }
-    };
-    findHeader2 = (pattern, headers) => {
-      return (headers.find(([k5]) => {
-        return k5.match(pattern);
-      }) || [void 0, void 0])[1];
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaSerializationMiddleware.js
-var schemaSerializationMiddleware;
-var init_schemaSerializationMiddleware = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/middleware/schemaSerializationMiddleware.js"() {
-    init_client2();
-    init_endpoints();
-    init_operation();
-    schemaSerializationMiddleware = (config) => (next, context) => async (args) => {
-      const { operationSchema } = getSmithyContext(context);
-      const [, ns, n3, t, i5, o2] = operationSchema ?? [];
-      const endpoint = context.endpointV2 ? async () => toEndpointV1(context.endpointV2) : config.endpoint;
-      const request = await config.protocol.serializeRequest(operation(ns, n3, t, i5, o2), args.input, {
-        ...config,
-        ...context,
-        endpoint
-      });
-      return next({
-        ...args,
-        request
-      });
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/middleware/getSchemaSerdePlugin.js
-function getSchemaSerdePlugin(config) {
-  return {
-    applyToStack: (commandStack) => {
-      commandStack.add(schemaSerializationMiddleware(config), serializerMiddlewareOption3);
-      commandStack.add(schemaDeserializationMiddleware(config), deserializerMiddlewareOption2);
-      config.protocol.setSerdeContext(config);
-    }
-  };
-}
-var deserializerMiddlewareOption2, serializerMiddlewareOption3;
-var init_getSchemaSerdePlugin = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/middleware/getSchemaSerdePlugin.js"() {
-    init_schemaDeserializationMiddleware();
-    init_schemaSerializationMiddleware();
-    deserializerMiddlewareOption2 = {
-      name: "deserializerMiddleware",
-      step: "deserialize",
-      tags: ["DESERIALIZER"],
-      override: true
-    };
-    serializerMiddlewareOption3 = {
-      name: "serializerMiddleware",
-      step: "serialize",
-      tags: ["SERIALIZER"],
-      override: true
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/Schema.js
-var Schema;
-var init_Schema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/Schema.js"() {
-    Schema = class {
-      name;
-      namespace;
-      traits;
-      static assign(instance, values) {
-        const schema = Object.assign(instance, values);
-        return schema;
-      }
-      static [Symbol.hasInstance](lhs) {
-        const isPrototype = this.prototype.isPrototypeOf(lhs);
-        if (!isPrototype && typeof lhs === "object" && lhs !== null) {
-          const list2 = lhs;
-          return list2.symbol === this.symbol;
-        }
-        return isPrototype;
-      }
-      getName() {
-        return this.namespace + "#" + this.name;
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/ListSchema.js
-var ListSchema, list;
-var init_ListSchema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/ListSchema.js"() {
-    init_Schema();
-    ListSchema = class _ListSchema extends Schema {
-      static symbol = /* @__PURE__ */ Symbol.for("@smithy/lis");
-      name;
-      traits;
-      valueSchema;
-      symbol = _ListSchema.symbol;
-    };
-    list = (namespace, name, traits, valueSchema) => Schema.assign(new ListSchema(), {
-      name,
-      namespace,
-      traits,
-      valueSchema
-    });
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/MapSchema.js
-var MapSchema, map;
-var init_MapSchema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/MapSchema.js"() {
-    init_Schema();
-    MapSchema = class _MapSchema extends Schema {
-      static symbol = /* @__PURE__ */ Symbol.for("@smithy/map");
-      name;
-      traits;
-      keySchema;
-      valueSchema;
-      symbol = _MapSchema.symbol;
-    };
-    map = (namespace, name, traits, keySchema, valueSchema) => Schema.assign(new MapSchema(), {
-      name,
-      namespace,
-      traits,
-      keySchema,
-      valueSchema
-    });
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/OperationSchema.js
-var OperationSchema, op;
-var init_OperationSchema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/OperationSchema.js"() {
-    init_Schema();
-    OperationSchema = class _OperationSchema extends Schema {
-      static symbol = /* @__PURE__ */ Symbol.for("@smithy/ope");
-      name;
-      traits;
-      input;
-      output;
-      symbol = _OperationSchema.symbol;
-    };
-    op = (namespace, name, traits, input, output) => Schema.assign(new OperationSchema(), {
-      name,
-      namespace,
-      traits,
-      input,
-      output
-    });
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/StructureSchema.js
-var StructureSchema, struct;
-var init_StructureSchema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/StructureSchema.js"() {
-    init_Schema();
-    StructureSchema = class _StructureSchema extends Schema {
-      static symbol = /* @__PURE__ */ Symbol.for("@smithy/str");
-      name;
-      traits;
-      memberNames;
-      memberList;
-      symbol = _StructureSchema.symbol;
-    };
-    struct = (namespace, name, traits, memberNames, memberList) => Schema.assign(new StructureSchema(), {
-      name,
-      namespace,
-      traits,
-      memberNames,
-      memberList
-    });
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/ErrorSchema.js
-var ErrorSchema, error2;
-var init_ErrorSchema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/ErrorSchema.js"() {
-    init_Schema();
-    init_StructureSchema();
-    ErrorSchema = class _ErrorSchema extends StructureSchema {
-      static symbol = /* @__PURE__ */ Symbol.for("@smithy/err");
-      ctor;
-      symbol = _ErrorSchema.symbol;
-    };
-    error2 = (namespace, name, traits, memberNames, memberList, ctor) => Schema.assign(new ErrorSchema(), {
-      name,
-      namespace,
-      traits,
-      memberNames,
-      memberList,
-      ctor: null
-    });
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/translateTraits.js
-function translateTraits(indicator) {
-  if (typeof indicator === "object") {
-    return indicator;
-  }
-  indicator = indicator | 0;
-  if (traitsCache[indicator]) {
-    return traitsCache[indicator];
-  }
-  const traits = {};
-  let i5 = 0;
-  for (const trait of [
-    "httpLabel",
-    "idempotent",
-    "idempotencyToken",
-    "sensitive",
-    "httpPayload",
-    "httpResponseCode",
-    "httpQueryParams"
-  ]) {
-    if ((indicator >> i5++ & 1) === 1) {
-      traits[trait] = 1;
-    }
-  }
-  return traitsCache[indicator] = traits;
-}
-var traitsCache;
-var init_translateTraits = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/translateTraits.js"() {
-    traitsCache = [];
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/NormalizedSchema.js
-function member(memberSchema, memberName) {
-  if (memberSchema instanceof NormalizedSchema) {
-    return Object.assign(memberSchema, {
-      memberName,
-      _isMemberSchema: true
-    });
-  }
-  const internalCtorAccess = NormalizedSchema;
-  return new internalCtorAccess(memberSchema, memberName);
-}
-var anno, simpleSchemaCacheN, simpleSchemaCacheS, NormalizedSchema, isMemberSchema, isStaticSchema;
-var init_NormalizedSchema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/NormalizedSchema.js"() {
-    init_deref();
-    init_translateTraits();
-    anno = {
-      it: /* @__PURE__ */ Symbol.for("@smithy/nor-struct-it"),
-      ns: /* @__PURE__ */ Symbol.for("@smithy/ns")
-    };
-    simpleSchemaCacheN = [];
-    simpleSchemaCacheS = {};
-    NormalizedSchema = class _NormalizedSchema {
-      ref;
-      memberName;
-      static symbol = /* @__PURE__ */ Symbol.for("@smithy/nor");
-      symbol = _NormalizedSchema.symbol;
-      name;
-      schema;
-      _isMemberSchema;
-      traits;
-      memberTraits;
-      normalizedTraits;
-      constructor(ref, memberName) {
-        this.ref = ref;
-        this.memberName = memberName;
-        const traitStack = [];
-        let _ref = ref;
-        let schema = ref;
-        this._isMemberSchema = false;
-        while (isMemberSchema(_ref)) {
-          traitStack.push(_ref[1]);
-          _ref = _ref[0];
-          schema = deref(_ref);
-          this._isMemberSchema = true;
-        }
-        if (traitStack.length > 0) {
-          this.memberTraits = {};
-          for (let i5 = traitStack.length - 1; i5 >= 0; --i5) {
-            const traitSet = traitStack[i5];
-            Object.assign(this.memberTraits, translateTraits(traitSet));
-          }
-        } else {
-          this.memberTraits = 0;
-        }
-        if (schema instanceof _NormalizedSchema) {
-          const computedMemberTraits = this.memberTraits;
-          Object.assign(this, schema);
-          this.memberTraits = Object.assign({}, computedMemberTraits, schema.getMemberTraits(), this.getMemberTraits());
-          this.normalizedTraits = void 0;
-          this.memberName = memberName ?? schema.memberName;
-          return;
-        }
-        this.schema = deref(schema);
-        if (isStaticSchema(this.schema)) {
-          this.name = `${this.schema[1]}#${this.schema[2]}`;
-          this.traits = this.schema[3];
-        } else {
-          this.name = this.memberName ?? String(schema);
-          this.traits = 0;
-        }
-        if (this._isMemberSchema && !memberName) {
-          throw new Error(`@smithy/core/schema - NormalizedSchema member init ${this.getName(true)} missing member name.`);
-        }
-      }
-      static [Symbol.hasInstance](lhs) {
-        const isPrototype = this.prototype.isPrototypeOf(lhs);
-        if (!isPrototype && typeof lhs === "object" && lhs !== null) {
-          const ns = lhs;
-          return ns.symbol === this.symbol;
-        }
-        return isPrototype;
-      }
-      static of(ref) {
-        const keyAble = typeof ref === "function" || typeof ref === "object" && ref !== null;
-        if (typeof ref === "number") {
-          if (simpleSchemaCacheN[ref]) {
-            return simpleSchemaCacheN[ref];
-          }
-        } else if (typeof ref === "string") {
-          if (simpleSchemaCacheS[ref]) {
-            return simpleSchemaCacheS[ref];
-          }
-        } else if (keyAble) {
-          if (ref[anno.ns]) {
-            return ref[anno.ns];
-          }
-        }
-        const sc = deref(ref);
-        if (sc instanceof _NormalizedSchema) {
-          return sc;
-        }
-        if (isMemberSchema(sc)) {
-          const [ns2, traits] = sc;
-          if (ns2 instanceof _NormalizedSchema) {
-            Object.assign(ns2.getMergedTraits(), translateTraits(traits));
-            return ns2;
-          }
-          throw new Error(`@smithy/core/schema - may not init unwrapped member schema=${JSON.stringify(ref, null, 2)}.`);
-        }
-        const ns = new _NormalizedSchema(sc);
-        if (keyAble) {
-          return ref[anno.ns] = ns;
-        }
-        if (typeof sc === "string") {
-          return simpleSchemaCacheS[sc] = ns;
-        }
-        if (typeof sc === "number") {
-          return simpleSchemaCacheN[sc] = ns;
-        }
-        return ns;
-      }
-      getSchema() {
-        const sc = this.schema;
-        if (Array.isArray(sc) && sc[0] === 0) {
-          return sc[4];
-        }
-        return sc;
-      }
-      getName(withNamespace = false) {
-        const { name } = this;
-        const short = !withNamespace && name && name.includes("#");
-        return short ? name.split("#")[1] : name || void 0;
-      }
-      getMemberName() {
-        return this.memberName;
-      }
-      isMemberSchema() {
-        return this._isMemberSchema;
-      }
-      isListSchema() {
-        const sc = this.getSchema();
-        return typeof sc === "number" ? sc >= 64 && sc < 128 : sc[0] === 1;
-      }
-      isMapSchema() {
-        const sc = this.getSchema();
-        return typeof sc === "number" ? sc >= 128 && sc <= 255 : sc[0] === 2;
-      }
-      isStructSchema() {
-        const sc = this.getSchema();
-        if (typeof sc !== "object") {
-          return false;
-        }
-        const id = sc[0];
-        return id === 3 || id === -3 || id === 4;
-      }
-      isUnionSchema() {
-        const sc = this.getSchema();
-        if (typeof sc !== "object") {
-          return false;
-        }
-        return sc[0] === 4;
-      }
-      isBlobSchema() {
-        const sc = this.getSchema();
-        return sc === 21 || sc === 42;
-      }
-      isTimestampSchema() {
-        const sc = this.getSchema();
-        return typeof sc === "number" && sc >= 4 && sc <= 7;
-      }
-      isUnitSchema() {
-        return this.getSchema() === "unit";
-      }
-      isDocumentSchema() {
-        return this.getSchema() === 15;
-      }
-      isStringSchema() {
-        return this.getSchema() === 0;
-      }
-      isBooleanSchema() {
-        return this.getSchema() === 2;
-      }
-      isNumericSchema() {
-        return this.getSchema() === 1;
-      }
-      isBigIntegerSchema() {
-        return this.getSchema() === 17;
-      }
-      isBigDecimalSchema() {
-        return this.getSchema() === 19;
-      }
-      isStreaming() {
-        const { streaming } = this.getMergedTraits();
-        return !!streaming || this.getSchema() === 42;
-      }
-      isIdempotencyToken() {
-        return !!this.getMergedTraits().idempotencyToken;
-      }
-      getMergedTraits() {
-        return this.normalizedTraits ?? (this.normalizedTraits = {
-          ...this.getOwnTraits(),
-          ...this.getMemberTraits()
-        });
-      }
-      getMemberTraits() {
-        return translateTraits(this.memberTraits);
-      }
-      getOwnTraits() {
-        return translateTraits(this.traits);
-      }
-      getKeySchema() {
-        const [isDoc, isMap] = [this.isDocumentSchema(), this.isMapSchema()];
-        if (!isDoc && !isMap) {
-          throw new Error(`@smithy/core/schema - cannot get key for non-map: ${this.getName(true)}`);
-        }
-        const schema = this.getSchema();
-        const memberSchema = isDoc ? 15 : schema[4] ?? 0;
-        return member([memberSchema, 0], "key");
-      }
-      getValueSchema() {
-        const sc = this.getSchema();
-        const [isDoc, isMap, isList] = [this.isDocumentSchema(), this.isMapSchema(), this.isListSchema()];
-        const memberSchema = typeof sc === "number" ? 63 & sc : sc && typeof sc === "object" && (isMap || isList) ? sc[3 + sc[0]] : isDoc ? 15 : void 0;
-        if (memberSchema != null) {
-          return member([memberSchema, 0], isMap ? "value" : "member");
-        }
-        throw new Error(`@smithy/core/schema - ${this.getName(true)} has no value member.`);
-      }
-      getMemberSchema(memberName) {
-        const struct2 = this.getSchema();
-        if (this.isStructSchema() && struct2[4].includes(memberName)) {
-          const i5 = struct2[4].indexOf(memberName);
-          const memberSchema = struct2[5][i5];
-          return member(isMemberSchema(memberSchema) ? memberSchema : [memberSchema, 0], memberName);
-        }
-        if (this.isDocumentSchema()) {
-          return member([15, 0], memberName);
-        }
-        throw new Error(`@smithy/core/schema - ${this.getName(true)} has no member=${memberName}.`);
-      }
-      getMemberSchemas() {
-        const buffer = {};
-        try {
-          for (const [k5, v] of this.structIterator()) {
-            buffer[k5] = v;
-          }
-        } catch (ignored) {
-        }
-        return buffer;
-      }
-      getEventStreamMember() {
-        if (this.isStructSchema()) {
-          for (const [memberName, memberSchema] of this.structIterator()) {
-            if (memberSchema.isStreaming() && memberSchema.isStructSchema()) {
-              return memberName;
-            }
-          }
-        }
-        return "";
-      }
-      *structIterator() {
-        if (this.isUnitSchema()) {
-          return;
-        }
-        if (!this.isStructSchema()) {
-          throw new Error("@smithy/core/schema - cannot iterate non-struct schema.");
-        }
-        const struct2 = this.getSchema();
-        const z = struct2[4].length;
-        let it = struct2[anno.it];
-        if (it && z === it.length) {
-          yield* it;
-          return;
-        }
-        it = Array(z);
-        for (let i5 = 0; i5 < z; ++i5) {
-          const k5 = struct2[4][i5];
-          const v = member([struct2[5][i5], 0], k5);
-          yield it[i5] = [k5, v];
-        }
-        struct2[anno.it] = it;
-      }
-    };
-    isMemberSchema = (sc) => Array.isArray(sc) && sc.length === 2;
-    isStaticSchema = (sc) => Array.isArray(sc) && sc.length >= 5;
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/SimpleSchema.js
-var SimpleSchema, sim, simAdapter;
-var init_SimpleSchema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/SimpleSchema.js"() {
-    init_Schema();
-    SimpleSchema = class _SimpleSchema extends Schema {
-      static symbol = /* @__PURE__ */ Symbol.for("@smithy/sim");
-      name;
-      schemaRef;
-      traits;
-      symbol = _SimpleSchema.symbol;
-    };
-    sim = (namespace, name, schemaRef, traits) => Schema.assign(new SimpleSchema(), {
-      name,
-      namespace,
-      traits,
-      schemaRef
-    });
-    simAdapter = (namespace, name, traits, schemaRef) => Schema.assign(new SimpleSchema(), {
-      name,
-      namespace,
-      traits,
-      schemaRef
-    });
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/schemas/sentinels.js
-var SCHEMA;
-var init_sentinels = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/schemas/sentinels.js"() {
-    SCHEMA = {
-      BLOB: 21,
-      STREAMING_BLOB: 42,
-      BOOLEAN: 2,
-      STRING: 0,
-      NUMERIC: 1,
-      BIG_INTEGER: 17,
-      BIG_DECIMAL: 19,
-      DOCUMENT: 15,
-      TIMESTAMP_DEFAULT: 4,
-      TIMESTAMP_DATE_TIME: 5,
-      TIMESTAMP_HTTP_DATE: 6,
-      TIMESTAMP_EPOCH_SECONDS: 7,
-      LIST_MODIFIER: 64,
-      MAP_MODIFIER: 128
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/TypeRegistry.js
-var TypeRegistry;
-var init_TypeRegistry = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/TypeRegistry.js"() {
-    TypeRegistry = class _TypeRegistry {
-      namespace;
-      schemas;
-      exceptions;
-      static registries = /* @__PURE__ */ new Map();
-      constructor(namespace, schemas = /* @__PURE__ */ new Map(), exceptions = /* @__PURE__ */ new Map()) {
-        this.namespace = namespace;
-        this.schemas = schemas;
-        this.exceptions = exceptions;
-      }
-      static for(namespace) {
-        if (!_TypeRegistry.registries.has(namespace)) {
-          _TypeRegistry.registries.set(namespace, new _TypeRegistry(namespace));
-        }
-        return _TypeRegistry.registries.get(namespace);
-      }
-      copyFrom(other) {
-        const { schemas, exceptions } = this;
-        for (const [k5, v] of other.schemas) {
-          if (!schemas.has(k5)) {
-            schemas.set(k5, v);
-          }
-        }
-        for (const [k5, v] of other.exceptions) {
-          if (!exceptions.has(k5)) {
-            exceptions.set(k5, v);
-          }
-        }
-      }
-      register(shapeId, schema) {
-        const qualifiedName = this.normalizeShapeId(shapeId);
-        for (const r5 of [this, _TypeRegistry.for(qualifiedName.split("#")[0])]) {
-          r5.schemas.set(qualifiedName, schema);
-        }
-      }
-      getSchema(shapeId) {
-        const id = this.normalizeShapeId(shapeId);
-        if (!this.schemas.has(id)) {
-          if (!shapeId.includes("#")) {
-            const suffix = "#" + shapeId;
-            const candidates = [];
-            for (const [shapeId2, schema] of this.schemas.entries()) {
-              if (shapeId2.endsWith(suffix)) {
-                candidates.push(schema);
-              }
-            }
-            if (candidates.length === 1) {
-              return candidates[0];
-            }
-          }
-          throw new Error(`@smithy/core/schema - schema not found for ${id}`);
-        }
-        return this.schemas.get(id);
-      }
-      registerError(es, ctor) {
-        const $error = es;
-        const ns = $error[1];
-        for (const r5 of [this, _TypeRegistry.for(ns)]) {
-          r5.schemas.set(ns + "#" + $error[2], $error);
-          r5.exceptions.set($error, ctor);
-        }
-      }
-      getErrorCtor(es) {
-        const $error = es;
-        if (this.exceptions.has($error)) {
-          return this.exceptions.get($error);
-        }
-        const registry = _TypeRegistry.for($error[1]);
-        return registry.exceptions.get($error);
-      }
-      getBaseException() {
-        for (const exceptionKey of this.exceptions.keys()) {
-          if (Array.isArray(exceptionKey)) {
-            const [, ns, name] = exceptionKey;
-            const id = ns + "#" + name;
-            if (id.startsWith("smithy.ts.sdk.synthetic.") && id.endsWith("ServiceException")) {
-              return exceptionKey;
-            }
-          }
-        }
-        return void 0;
-      }
-      find(predicate) {
-        for (const schema of this.schemas.values()) {
-          if (predicate(schema)) {
-            return schema;
-          }
-        }
-        return void 0;
-      }
-      clear() {
-        this.schemas.clear();
-        this.exceptions.clear();
-      }
-      normalizeShapeId(shapeId) {
-        if (shapeId.includes("#")) {
-          return shapeId;
-        }
-        return this.namespace + "#" + shapeId;
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/schema/index.js
-var schema_exports = {};
-__export(schema_exports, {
-  ErrorSchema: () => ErrorSchema,
-  ListSchema: () => ListSchema,
-  MapSchema: () => MapSchema,
-  NormalizedSchema: () => NormalizedSchema,
-  OperationSchema: () => OperationSchema,
-  SCHEMA: () => SCHEMA,
-  Schema: () => Schema,
-  SimpleSchema: () => SimpleSchema,
-  StructureSchema: () => StructureSchema,
-  TypeRegistry: () => TypeRegistry,
-  deref: () => deref,
-  deserializerMiddlewareOption: () => deserializerMiddlewareOption2,
-  error: () => error2,
-  getSchemaSerdePlugin: () => getSchemaSerdePlugin,
-  isStaticSchema: () => isStaticSchema,
-  list: () => list,
-  map: () => map,
-  op: () => op,
-  operation: () => operation,
-  serializerMiddlewareOption: () => serializerMiddlewareOption3,
-  sim: () => sim,
-  simAdapter: () => simAdapter,
-  simpleSchemaCacheN: () => simpleSchemaCacheN,
-  simpleSchemaCacheS: () => simpleSchemaCacheS,
-  struct: () => struct,
-  traitsCache: () => traitsCache,
-  translateTraits: () => translateTraits
-});
-var init_schema = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/schema/index.js"() {
-    init_deref();
-    init_getSchemaSerdePlugin();
-    init_ListSchema();
-    init_MapSchema();
-    init_OperationSchema();
-    init_operation();
-    init_ErrorSchema();
-    init_NormalizedSchema();
-    init_Schema();
-    init_SimpleSchema();
-    init_StructureSchema();
-    init_sentinels();
-    init_translateTraits();
-    init_TypeRegistry();
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/schemaLogFilter.js
-function schemaLogFilter(schema, data3) {
-  if (data3 == null) {
-    return data3;
-  }
-  const ns = NormalizedSchema.of(schema);
-  if (ns.getMergedTraits().sensitive) {
-    return SENSITIVE_STRING;
-  }
-  if (ns.isListSchema()) {
-    const isSensitive = !!ns.getValueSchema().getMergedTraits().sensitive;
-    if (isSensitive) {
-      return SENSITIVE_STRING;
-    }
-  } else if (ns.isMapSchema()) {
-    const isSensitive = !!ns.getKeySchema().getMergedTraits().sensitive || !!ns.getValueSchema().getMergedTraits().sensitive;
-    if (isSensitive) {
-      return SENSITIVE_STRING;
-    }
-  } else if (ns.isStructSchema() && typeof data3 === "object") {
-    const object = data3;
-    const newObject = {};
-    for (const [member2, memberNs] of ns.structIterator()) {
-      if (object[member2] != null) {
-        newObject[member2] = schemaLogFilter(memberNs, object[member2]);
-      }
-    }
-    return newObject;
-  }
-  return data3;
-}
-var SENSITIVE_STRING;
-var init_schemaLogFilter = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/schemaLogFilter.js"() {
-    init_schema();
-    SENSITIVE_STRING = "***SensitiveInformation***";
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/command.js
-var import_types21, Command2, ClassBuilder;
-var init_command = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/command.js"() {
-    import_types21 = __toESM(require_dist_cjs());
-    init_MiddlewareStack();
-    init_schemaLogFilter();
-    Command2 = class {
-      middlewareStack = constructStack();
-      schema;
-      static classBuilder() {
-        return new ClassBuilder();
-      }
-      resolveMiddlewareWithContext(clientStack, configuration, options, { middlewareFn, clientName, commandName, inputFilterSensitiveLog, outputFilterSensitiveLog, smithyContext, additionalContext, CommandCtor }) {
-        for (const mw of middlewareFn.bind(this)(CommandCtor, clientStack, configuration, options)) {
-          this.middlewareStack.use(mw);
-        }
-        const stack = clientStack.concat(this.middlewareStack);
-        const { logger: logger2 } = configuration;
-        const handlerExecutionContext = {
-          logger: logger2,
-          clientName,
-          commandName,
-          inputFilterSensitiveLog,
-          outputFilterSensitiveLog,
-          [import_types21.SMITHY_CONTEXT_KEY]: {
-            commandInstance: this,
-            ...smithyContext
-          },
-          ...additionalContext
-        };
-        const { requestHandler } = configuration;
-        let requestOptions = options ?? {};
-        if (smithyContext.eventStream) {
-          requestOptions = {
-            isEventStream: true,
-            ...requestOptions
-          };
-        }
-        return stack.resolve((request) => requestHandler.handle(request.request, requestOptions), handlerExecutionContext);
-      }
-    };
-    ClassBuilder = class {
-      _init = () => {
-      };
-      _ep = {};
-      _middlewareFn = () => [];
-      _commandName = "";
-      _clientName = "";
-      _additionalContext = {};
-      _smithyContext = {};
-      _inputFilterSensitiveLog = void 0;
-      _outputFilterSensitiveLog = void 0;
-      _serializer = null;
-      _deserializer = null;
-      _operationSchema;
-      init(cb) {
-        this._init = cb;
-      }
-      ep(endpointParameterInstructions) {
-        this._ep = endpointParameterInstructions;
-        return this;
-      }
-      m(middlewareSupplier) {
-        this._middlewareFn = middlewareSupplier;
-        return this;
-      }
-      s(service, operation2, smithyContext = {}) {
-        this._smithyContext = {
-          service,
-          operation: operation2,
-          ...smithyContext
-        };
-        return this;
-      }
-      c(additionalContext = {}) {
-        this._additionalContext = additionalContext;
-        return this;
-      }
-      n(clientName, commandName) {
-        this._clientName = clientName;
-        this._commandName = commandName;
-        return this;
-      }
-      f(inputFilter = (_) => _, outputFilter = (_) => _) {
-        this._inputFilterSensitiveLog = inputFilter;
-        this._outputFilterSensitiveLog = outputFilter;
-        return this;
-      }
-      ser(serializer) {
-        this._serializer = serializer;
-        return this;
-      }
-      de(deserializer) {
-        this._deserializer = deserializer;
-        return this;
-      }
-      sc(operation2) {
-        this._operationSchema = operation2;
-        this._smithyContext.operationSchema = operation2;
-        return this;
-      }
-      build() {
-        const closure = this;
-        let CommandRef;
-        return CommandRef = class extends Command2 {
-          input;
-          static getEndpointParameterInstructions() {
-            return closure._ep;
-          }
-          constructor(...[input]) {
-            super();
-            this.input = input ?? {};
-            closure._init(this);
-            this.schema = closure._operationSchema;
-          }
-          resolveMiddleware(stack, configuration, options) {
-            const op2 = closure._operationSchema;
-            const input = op2?.[4] ?? op2?.input;
-            const output = op2?.[5] ?? op2?.output;
-            return this.resolveMiddlewareWithContext(stack, configuration, options, {
-              CommandCtor: CommandRef,
-              middlewareFn: closure._middlewareFn,
-              clientName: closure._clientName,
-              commandName: closure._commandName,
-              inputFilterSensitiveLog: closure._inputFilterSensitiveLog ?? (op2 ? schemaLogFilter.bind(null, input) : (_) => _),
-              outputFilterSensitiveLog: closure._outputFilterSensitiveLog ?? (op2 ? schemaLogFilter.bind(null, output) : (_) => _),
-              smithyContext: closure._smithyContext,
-              additionalContext: closure._additionalContext
-            });
-          }
-          serialize = closure._serializer;
-          deserialize = closure._deserializer;
-        };
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/constants.js
-var SENSITIVE_STRING2;
-var init_constants3 = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/constants.js"() {
-    SENSITIVE_STRING2 = "***SensitiveInformation***";
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/create-aggregated-client.js
-var createAggregatedClient;
-var init_create_aggregated_client = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/create-aggregated-client.js"() {
-    createAggregatedClient = (commands5, Client3, options) => {
-      for (const [command, CommandCtor] of Object.entries(commands5)) {
-        const methodImpl = async function(args, optionsOrCb, cb) {
-          const command2 = new CommandCtor(args);
-          if (typeof optionsOrCb === "function") {
-            this.send(command2, optionsOrCb);
-          } else if (typeof cb === "function") {
-            if (typeof optionsOrCb !== "object")
-              throw new Error(`Expected http options but got ${typeof optionsOrCb}`);
-            this.send(command2, optionsOrCb || {}, cb);
-          } else {
-            return this.send(command2, optionsOrCb);
-          }
-        };
-        const methodName = (command[0].toLowerCase() + command.slice(1)).replace(/Command$/, "");
-        Client3.prototype[methodName] = methodImpl;
-      }
-      const { paginators = {}, waiters = {} } = options ?? {};
-      for (const [paginatorName, paginatorFn] of Object.entries(paginators)) {
-        if (Client3.prototype[paginatorName] === void 0) {
-          Client3.prototype[paginatorName] = function(commandInput = {}, paginationConfiguration, ...rest) {
-            return paginatorFn({
-              ...paginationConfiguration,
-              client: this
-            }, commandInput, ...rest);
-          };
-        }
-      }
-      for (const [waiterName, waiterFn] of Object.entries(waiters)) {
-        if (Client3.prototype[waiterName] === void 0) {
-          Client3.prototype[waiterName] = async function(commandInput = {}, waiterConfiguration, ...rest) {
-            let config = waiterConfiguration;
-            if (typeof waiterConfiguration === "number") {
-              config = {
-                maxWaitTime: waiterConfiguration
-              };
-            }
-            return waiterFn({
-              ...config,
-              client: this
-            }, commandInput, ...rest);
-          };
-        }
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/exceptions.js
-var ServiceException, decorateServiceException;
-var init_exceptions = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/exceptions.js"() {
-    ServiceException = class _ServiceException extends Error {
-      $fault;
-      $response;
-      $retryable;
-      $metadata;
-      constructor(options) {
-        super(options.message);
-        Object.setPrototypeOf(this, Object.getPrototypeOf(this).constructor.prototype);
-        this.name = options.name;
-        this.$fault = options.$fault;
-        this.$metadata = options.$metadata;
-      }
-      static isInstance(value) {
-        if (!value)
-          return false;
-        const candidate = value;
-        return _ServiceException.prototype.isPrototypeOf(candidate) || Boolean(candidate.$fault) && Boolean(candidate.$metadata) && (candidate.$fault === "client" || candidate.$fault === "server");
-      }
-      static [Symbol.hasInstance](instance) {
-        if (!instance)
-          return false;
-        const candidate = instance;
-        if (this === _ServiceException) {
-          return _ServiceException.isInstance(instance);
-        }
-        if (_ServiceException.isInstance(instance)) {
-          if (candidate.name && this.name) {
-            return this.prototype.isPrototypeOf(instance) || candidate.name === this.name;
-          }
-          return this.prototype.isPrototypeOf(instance);
-        }
-        return false;
-      }
-    };
-    decorateServiceException = (exception, additions = {}) => {
-      Object.entries(additions).filter(([, v]) => v !== void 0).forEach(([k5, v]) => {
-        if (exception[k5] == void 0 || exception[k5] === "") {
-          exception[k5] = v;
-        }
-      });
-      const message = exception.message || exception.Message || "UnknownError";
-      exception.message = message;
-      delete exception.Message;
-      return exception;
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/default-error-handler.js
-var throwDefaultError, withBaseException, deserializeMetadata;
-var init_default_error_handler = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/default-error-handler.js"() {
-    init_exceptions();
-    throwDefaultError = ({ output, parsedBody, exceptionCtor, errorCode }) => {
-      const $metadata = deserializeMetadata(output);
-      const statusCode = $metadata.httpStatusCode ? $metadata.httpStatusCode + "" : void 0;
-      const response = new exceptionCtor({
-        name: parsedBody?.code || parsedBody?.Code || errorCode || statusCode || "UnknownError",
-        $fault: "client",
-        $metadata
-      });
-      throw decorateServiceException(response, parsedBody);
-    };
-    withBaseException = (ExceptionCtor) => {
-      return ({ output, parsedBody, errorCode }) => {
-        throwDefaultError({ output, parsedBody, exceptionCtor: ExceptionCtor, errorCode });
-      };
-    };
-    deserializeMetadata = (output) => ({
-      httpStatusCode: output.statusCode,
-      requestId: output.headers["x-amzn-requestid"] ?? output.headers["x-amzn-request-id"] ?? output.headers["x-amz-request-id"],
-      extendedRequestId: output.headers["x-amz-id-2"],
-      cfId: output.headers["x-amz-cf-id"]
-    });
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/defaults-mode.js
-var loadConfigsForDefaultMode;
-var init_defaults_mode = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/defaults-mode.js"() {
-    loadConfigsForDefaultMode = (mode) => {
-      switch (mode) {
-        case "standard":
-          return {
-            retryMode: "standard",
-            connectionTimeout: 3100
-          };
-        case "in-region":
-          return {
-            retryMode: "standard",
-            connectionTimeout: 1100
-          };
-        case "cross-region":
-          return {
-            retryMode: "standard",
-            connectionTimeout: 3100
-          };
-        case "mobile":
-          return {
-            retryMode: "standard",
-            connectionTimeout: 3e4
-          };
-        default:
-          return {};
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/emitWarningIfUnsupportedVersion.js
-var warningEmitted, emitWarningIfUnsupportedVersion2;
-var init_emitWarningIfUnsupportedVersion2 = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/emitWarningIfUnsupportedVersion.js"() {
-    warningEmitted = false;
-    emitWarningIfUnsupportedVersion2 = (version) => {
-      if (version && !warningEmitted && parseInt(version.substring(1, version.indexOf("."))) < 16) {
-        warningEmitted = true;
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/checksum.js
-var import_types22, knownAlgorithms, getChecksumConfiguration, resolveChecksumRuntimeConfig;
-var init_checksum = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/checksum.js"() {
-    import_types22 = __toESM(require_dist_cjs());
-    knownAlgorithms = Object.values(import_types22.AlgorithmId);
-    getChecksumConfiguration = (runtimeConfig) => {
-      const checksumAlgorithms = [];
-      for (const id in import_types22.AlgorithmId) {
-        const algorithmId = import_types22.AlgorithmId[id];
-        if (runtimeConfig[algorithmId] === void 0) {
-          continue;
-        }
-        checksumAlgorithms.push({
-          algorithmId: () => algorithmId,
-          checksumConstructor: () => runtimeConfig[algorithmId]
-        });
-      }
-      for (const [id, ChecksumCtor] of Object.entries(runtimeConfig.checksumAlgorithms ?? {})) {
-        checksumAlgorithms.push({
-          algorithmId: () => id,
-          checksumConstructor: () => ChecksumCtor
-        });
-      }
-      return {
-        addChecksumAlgorithm(algo) {
-          runtimeConfig.checksumAlgorithms = runtimeConfig.checksumAlgorithms ?? {};
-          const id = algo.algorithmId();
-          const ctor = algo.checksumConstructor();
-          if (knownAlgorithms.includes(id)) {
-            runtimeConfig.checksumAlgorithms[id.toUpperCase()] = ctor;
-          } else {
-            runtimeConfig.checksumAlgorithms[id] = ctor;
-          }
-          checksumAlgorithms.push(algo);
-        },
-        checksumAlgorithms() {
-          return checksumAlgorithms;
-        }
-      };
-    };
-    resolveChecksumRuntimeConfig = (clientConfig) => {
-      const runtimeConfig = {};
-      clientConfig.checksumAlgorithms().forEach((checksumAlgorithm) => {
-        const id = checksumAlgorithm.algorithmId();
-        if (knownAlgorithms.includes(id)) {
-          runtimeConfig[id] = checksumAlgorithm.checksumConstructor();
-        }
-      });
-      return runtimeConfig;
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/retry.js
-var getRetryConfiguration, resolveRetryRuntimeConfig;
-var init_retry = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/retry.js"() {
-    getRetryConfiguration = (runtimeConfig) => {
-      return {
-        setRetryStrategy(retryStrategy) {
-          runtimeConfig.retryStrategy = retryStrategy;
-        },
-        retryStrategy() {
-          return runtimeConfig.retryStrategy;
-        }
-      };
-    };
-    resolveRetryRuntimeConfig = (retryStrategyConfiguration) => {
-      const runtimeConfig = {};
-      runtimeConfig.retryStrategy = retryStrategyConfiguration.retryStrategy();
-      return runtimeConfig;
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/defaultExtensionConfiguration.js
-var getDefaultExtensionConfiguration, getDefaultClientConfiguration, resolveDefaultRuntimeConfig;
-var init_defaultExtensionConfiguration = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/defaultExtensionConfiguration.js"() {
-    init_checksum();
-    init_retry();
-    getDefaultExtensionConfiguration = (runtimeConfig) => {
-      return Object.assign(getChecksumConfiguration(runtimeConfig), getRetryConfiguration(runtimeConfig));
-    };
-    getDefaultClientConfiguration = getDefaultExtensionConfiguration;
-    resolveDefaultRuntimeConfig = (config) => {
-      return Object.assign(resolveChecksumRuntimeConfig(config), resolveRetryRuntimeConfig(config));
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-array-if-single-item.js
-var getArrayIfSingleItem;
-var init_get_array_if_single_item = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-array-if-single-item.js"() {
-    getArrayIfSingleItem = (mayBeArray) => Array.isArray(mayBeArray) ? mayBeArray : [mayBeArray];
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-value-from-text-node.js
-var getValueFromTextNode;
-var init_get_value_from_text_node = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-value-from-text-node.js"() {
-    getValueFromTextNode = (obj) => {
-      const textNodeName = "#text";
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key) && obj[key][textNodeName] !== void 0) {
-          obj[key] = obj[key][textNodeName];
-        } else if (typeof obj[key] === "object" && obj[key] !== null) {
-          obj[key] = getValueFromTextNode(obj[key]);
-        }
-      }
-      return obj;
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/is-serializable-header-value.js
-var isSerializableHeaderValue;
-var init_is_serializable_header_value = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/is-serializable-header-value.js"() {
-    isSerializableHeaderValue = (value) => {
-      return value != null;
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/NoOpLogger.js
-var NoOpLogger;
-var init_NoOpLogger = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/NoOpLogger.js"() {
-    NoOpLogger = class {
-      trace() {
-      }
-      debug() {
-      }
-      info() {
-      }
-      warn() {
-      }
-      error() {
-      }
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/object-mapping.js
-function map2(arg0, arg1, arg2) {
-  let target;
-  let filter;
-  let instructions;
-  if (typeof arg1 === "undefined" && typeof arg2 === "undefined") {
-    target = {};
-    instructions = arg0;
-  } else {
-    target = arg0;
-    if (typeof arg1 === "function") {
-      filter = arg1;
-      instructions = arg2;
-      return mapWithFilter(target, filter, instructions);
-    } else {
-      instructions = arg1;
-    }
-  }
-  for (const key of Object.keys(instructions)) {
-    if (!Array.isArray(instructions[key])) {
-      target[key] = instructions[key];
-      continue;
-    }
-    applyInstruction(target, null, instructions, key);
-  }
-  return target;
-}
-var convertMap, take, mapWithFilter, applyInstruction, nonNullish, pass;
-var init_object_mapping = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/object-mapping.js"() {
-    convertMap = (target) => {
-      const output = {};
-      for (const [k5, v] of Object.entries(target || {})) {
-        output[k5] = [, v];
-      }
-      return output;
-    };
-    take = (source, instructions) => {
-      const out = {};
-      for (const key in instructions) {
-        applyInstruction(out, source, instructions, key);
-      }
-      return out;
-    };
-    mapWithFilter = (target, filter, instructions) => {
-      return map2(target, Object.entries(instructions).reduce((_instructions, [key, value]) => {
-        if (Array.isArray(value)) {
-          _instructions[key] = value;
-        } else {
-          if (typeof value === "function") {
-            _instructions[key] = [filter, value()];
-          } else {
-            _instructions[key] = [filter, value];
-          }
-        }
-        return _instructions;
-      }, {}));
-    };
-    applyInstruction = (target, source, instructions, targetKey) => {
-      if (source !== null) {
-        let instruction = instructions[targetKey];
-        if (typeof instruction === "function") {
-          instruction = [, instruction];
-        }
-        const [filter2 = nonNullish, valueFn = pass, sourceKey = targetKey] = instruction;
-        if (typeof filter2 === "function" && filter2(source[sourceKey]) || typeof filter2 !== "function" && !!filter2) {
-          target[targetKey] = valueFn(source[sourceKey]);
-        }
-        return;
-      }
-      let [filter, value] = instructions[targetKey];
-      if (typeof value === "function") {
-        let _value;
-        const defaultFilterPassed = filter === void 0 && (_value = value()) != null;
-        const customFilterPassed = typeof filter === "function" && !!filter(void 0) || typeof filter !== "function" && !!filter;
-        if (defaultFilterPassed) {
-          target[targetKey] = _value;
-        } else if (customFilterPassed) {
-          target[targetKey] = value();
-        }
-      } else {
-        const defaultFilterPassed = filter === void 0 && value != null;
-        const customFilterPassed = typeof filter === "function" && !!filter(value) || typeof filter !== "function" && !!filter;
-        if (defaultFilterPassed || customFilterPassed) {
-          target[targetKey] = value;
-        }
-      }
-    };
-    nonNullish = (_) => _ != null;
-    pass = (_) => _;
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/ser-utils.js
-var serializeFloat, serializeDateTime;
-var init_ser_utils = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/ser-utils.js"() {
-    serializeFloat = (value) => {
-      if (value !== value) {
-        return "NaN";
-      }
-      switch (value) {
-        case Infinity:
-          return "Infinity";
-        case -Infinity:
-          return "-Infinity";
-        default:
-          return value;
-      }
-    };
-    serializeDateTime = (date2) => date2.toISOString().replace(".000Z", "Z");
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/smithy-client/serde-json.js
-var _json;
-var init_serde_json = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/serde-json.js"() {
-    _json = (obj) => {
-      if (obj == null) {
-        return {};
-      }
-      if (Array.isArray(obj)) {
-        return obj.filter((_) => _ != null).map(_json);
-      }
-      if (typeof obj === "object") {
-        const target = {};
-        for (const key of Object.keys(obj)) {
-          if (obj[key] == null) {
-            continue;
-          }
-          target[key] = _json(obj[key]);
-        }
-        return target;
-      }
-      return obj;
-    };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/submodules/client/index.js
-var client_exports = {};
-__export(client_exports, {
-  AlgorithmId: () => import_types22.AlgorithmId,
-  Client: () => Client,
-  Command: () => Command2,
-  NoOpLogger: () => NoOpLogger,
-  SENSITIVE_STRING: () => SENSITIVE_STRING2,
-  ServiceException: () => ServiceException,
-  WaiterState: () => WaiterState,
-  _json: () => _json,
-  checkExceptions: () => checkExceptions,
-  constructStack: () => constructStack,
-  convertMap: () => convertMap,
-  createAggregatedClient: () => createAggregatedClient,
-  createWaiter: () => createWaiter,
-  decorateServiceException: () => decorateServiceException,
-  emitWarningIfUnsupportedVersion: () => emitWarningIfUnsupportedVersion2,
-  getArrayIfSingleItem: () => getArrayIfSingleItem,
-  getChecksumConfiguration: () => getChecksumConfiguration,
-  getDefaultClientConfiguration: () => getDefaultClientConfiguration,
-  getDefaultExtensionConfiguration: () => getDefaultExtensionConfiguration,
-  getRetryConfiguration: () => getRetryConfiguration,
-  getSmithyContext: () => getSmithyContext,
-  getValueFromTextNode: () => getValueFromTextNode,
-  invalidFunction: () => invalidFunction,
-  invalidProvider: () => invalidProvider,
-  isSerializableHeaderValue: () => isSerializableHeaderValue,
-  loadConfigsForDefaultMode: () => loadConfigsForDefaultMode,
-  map: () => map2,
-  normalizeProvider: () => normalizeProvider,
-  resolveChecksumRuntimeConfig: () => resolveChecksumRuntimeConfig,
-  resolveDefaultRuntimeConfig: () => resolveDefaultRuntimeConfig,
-  resolveRetryRuntimeConfig: () => resolveRetryRuntimeConfig,
-  schemaLogFilter: () => schemaLogFilter,
-  serializeDateTime: () => serializeDateTime,
-  serializeFloat: () => serializeFloat,
-  take: () => take,
-  throwDefaultError: () => throwDefaultError,
-  waiterServiceDefaults: () => waiterServiceDefaults,
-  withBaseException: () => withBaseException
-});
-var init_client2 = __esm({
-  "node_modules/@smithy/core/dist-es/submodules/client/index.js"() {
-    init_MiddlewareStack();
-    init_getSmithyContext();
-    init_normalizeProvider();
-    init_invalidFunction();
-    init_invalidProvider();
-    init_createWaiter();
-    init_waiter();
-    init_client();
-    init_command();
-    init_constants3();
-    init_create_aggregated_client();
-    init_default_error_handler();
-    init_defaults_mode();
-    init_emitWarningIfUnsupportedVersion2();
-    init_exceptions();
-    init_defaultExtensionConfiguration();
-    init_checksum();
-    init_retry();
-    init_get_array_if_single_item();
-    init_get_value_from_text_node();
-    init_is_serializable_header_value();
-    init_NoOpLogger();
-    init_object_mapping();
-    init_schemaLogFilter();
-    init_ser_utils();
-    init_serde_json();
+    init_transport();
+    init_transport();
   }
 });
 
@@ -30089,19 +30101,10 @@ var init_getRecursionDetectionPlugin = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/getSmithyContext.js
-var import_types23, getSmithyContext2;
-var init_getSmithyContext2 = __esm({
-  "node_modules/@smithy/core/dist-es/getSmithyContext.js"() {
-    import_types23 = __toESM(require_dist_cjs());
-    getSmithyContext2 = (context) => context[import_types23.SMITHY_CONTEXT_KEY] || (context[import_types23.SMITHY_CONTEXT_KEY] = {});
-  }
-});
-
-// node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/resolveAuthOptions.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/resolveAuthOptions.js
 var resolveAuthOptions;
 var init_resolveAuthOptions = __esm({
-  "node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/resolveAuthOptions.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/resolveAuthOptions.js"() {
     resolveAuthOptions = (candidateAuthOptions, authSchemePreference) => {
       if (!authSchemePreference || authSchemePreference.length === 0) {
         return candidateAuthOptions;
@@ -30125,7 +30128,7 @@ var init_resolveAuthOptions = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/httpAuthSchemeMiddleware.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/httpAuthSchemeMiddleware.js
 function convertHttpAuthSchemesToMap(httpAuthSchemes) {
   const map3 = /* @__PURE__ */ new Map();
   for (const scheme of httpAuthSchemes) {
@@ -30135,7 +30138,7 @@ function convertHttpAuthSchemesToMap(httpAuthSchemes) {
 }
 var httpAuthSchemeMiddleware;
 var init_httpAuthSchemeMiddleware = __esm({
-  "node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/httpAuthSchemeMiddleware.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/httpAuthSchemeMiddleware.js"() {
     init_client2();
     init_resolveAuthOptions();
     httpAuthSchemeMiddleware = (config, mwOptions) => (next, context) => async (args) => {
@@ -30174,10 +30177,10 @@ var init_httpAuthSchemeMiddleware = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/getHttpAuthSchemeEndpointRuleSetPlugin.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/getHttpAuthSchemeEndpointRuleSetPlugin.js
 var httpAuthSchemeEndpointRuleSetMiddlewareOptions, getHttpAuthSchemeEndpointRuleSetPlugin;
 var init_getHttpAuthSchemeEndpointRuleSetPlugin = __esm({
-  "node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/getHttpAuthSchemeEndpointRuleSetPlugin.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/getHttpAuthSchemeEndpointRuleSetPlugin.js"() {
     init_httpAuthSchemeMiddleware();
     httpAuthSchemeEndpointRuleSetMiddlewareOptions = {
       step: "serialize",
@@ -30198,10 +30201,10 @@ var init_getHttpAuthSchemeEndpointRuleSetPlugin = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/getHttpAuthSchemePlugin.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/getHttpAuthSchemePlugin.js
 var httpAuthSchemeMiddlewareOptions, getHttpAuthSchemePlugin;
 var init_getHttpAuthSchemePlugin = __esm({
-  "node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/getHttpAuthSchemePlugin.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/getHttpAuthSchemePlugin.js"() {
     init_httpAuthSchemeMiddleware();
     httpAuthSchemeMiddlewareOptions = {
       step: "serialize",
@@ -30222,19 +30225,19 @@ var init_getHttpAuthSchemePlugin = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/index.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/index.js
 var init_middleware_http_auth_scheme = __esm({
-  "node_modules/@smithy/core/dist-es/middleware-http-auth-scheme/index.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-auth-scheme/index.js"() {
     init_httpAuthSchemeMiddleware();
     init_getHttpAuthSchemeEndpointRuleSetPlugin();
     init_getHttpAuthSchemePlugin();
   }
 });
 
-// node_modules/@smithy/core/dist-es/middleware-http-signing/httpSigningMiddleware.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-signing/httpSigningMiddleware.js
 var defaultErrorHandler, defaultSuccessHandler, httpSigningMiddleware;
 var init_httpSigningMiddleware = __esm({
-  "node_modules/@smithy/core/dist-es/middleware-http-signing/httpSigningMiddleware.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-signing/httpSigningMiddleware.js"() {
     init_client2();
     init_protocols();
     defaultErrorHandler = (signingProperties) => (error3) => {
@@ -30262,10 +30265,10 @@ var init_httpSigningMiddleware = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/middleware-http-signing/getHttpSigningMiddleware.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-signing/getHttpSigningMiddleware.js
 var httpSigningMiddlewareOptions, getHttpSigningPlugin;
 var init_getHttpSigningMiddleware = __esm({
-  "node_modules/@smithy/core/dist-es/middleware-http-signing/getHttpSigningMiddleware.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-signing/getHttpSigningMiddleware.js"() {
     init_httpSigningMiddleware();
     httpSigningMiddlewareOptions = {
       step: "finalizeRequest",
@@ -30284,9 +30287,9 @@ var init_getHttpSigningMiddleware = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/middleware-http-signing/index.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-signing/index.js
 var init_middleware_http_signing = __esm({
-  "node_modules/@smithy/core/dist-es/middleware-http-signing/index.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/middleware-http-signing/index.js"() {
     init_httpSigningMiddleware();
     init_getHttpSigningMiddleware();
   }
@@ -30305,7 +30308,7 @@ var init_normalizeProvider2 = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/pagination/createPaginator.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/pagination/createPaginator.js
 function createPaginator(ClientCtor, CommandCtor, inputTokenName, outputTokenName, pageSizeTokenName) {
   return async function* paginateOperation(config, input, ...additionalArguments) {
     const _input = input;
@@ -30332,15 +30335,15 @@ function createPaginator(ClientCtor, CommandCtor, inputTokenName, outputTokenNam
 }
 var makePagedClientRequest, get;
 var init_createPaginator = __esm({
-  "node_modules/@smithy/core/dist-es/pagination/createPaginator.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/pagination/createPaginator.js"() {
     makePagedClientRequest = async (CommandCtor, client, input, withCommand = (_) => _, ...args) => {
       let command = new CommandCtor(input);
       command = withCommand(command) ?? command;
       return await client.send(command, ...args);
     };
-    get = (fromObject, path3) => {
+    get = (fromObject, path4) => {
       let cursor2 = fromObject;
-      const pathComponents = path3.split(".");
+      const pathComponents = path4.split(".");
       for (const step of pathComponents) {
         if (!cursor2 || typeof cursor2 !== "object") {
           return void 0;
@@ -30349,13 +30352,6 @@ var init_createPaginator = __esm({
       }
       return cursor2;
     };
-  }
-});
-
-// node_modules/@smithy/core/dist-es/request-builder/requestBuilder.js
-var init_requestBuilder2 = __esm({
-  "node_modules/@smithy/core/dist-es/request-builder/requestBuilder.js"() {
-    init_protocols();
   }
 });
 
@@ -30375,10 +30371,10 @@ var init_setFeature2 = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/util-identity-and-auth/DefaultIdentityProviderConfig.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/DefaultIdentityProviderConfig.js
 var DefaultIdentityProviderConfig;
 var init_DefaultIdentityProviderConfig = __esm({
-  "node_modules/@smithy/core/dist-es/util-identity-and-auth/DefaultIdentityProviderConfig.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/DefaultIdentityProviderConfig.js"() {
     DefaultIdentityProviderConfig = class {
       authSchemes = /* @__PURE__ */ new Map();
       constructor(config) {
@@ -30396,12 +30392,12 @@ var init_DefaultIdentityProviderConfig = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/util-identity-and-auth/httpAuthSchemes/httpApiKeyAuth.js
-var import_types24, HttpApiKeyAuthSigner;
+// node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/httpAuthSchemes/httpApiKeyAuth.js
+var import_types23, HttpApiKeyAuthSigner;
 var init_httpApiKeyAuth = __esm({
-  "node_modules/@smithy/core/dist-es/util-identity-and-auth/httpAuthSchemes/httpApiKeyAuth.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/httpAuthSchemes/httpApiKeyAuth.js"() {
     init_protocols();
-    import_types24 = __toESM(require_dist_cjs());
+    import_types23 = __toESM(require_dist_cjs());
     HttpApiKeyAuthSigner = class {
       async sign(httpRequest, identity, signingProperties) {
         if (!signingProperties) {
@@ -30417,9 +30413,9 @@ var init_httpApiKeyAuth = __esm({
           throw new Error("request could not be signed with `apiKey` since the `apiKey` is not defined");
         }
         const clonedRequest = HttpRequest.clone(httpRequest);
-        if (signingProperties.in === import_types24.HttpApiKeyAuthLocation.QUERY) {
+        if (signingProperties.in === import_types23.HttpApiKeyAuthLocation.QUERY) {
           clonedRequest.query[signingProperties.name] = identity.apiKey;
-        } else if (signingProperties.in === import_types24.HttpApiKeyAuthLocation.HEADER) {
+        } else if (signingProperties.in === import_types23.HttpApiKeyAuthLocation.HEADER) {
           clonedRequest.headers[signingProperties.name] = signingProperties.scheme ? `${signingProperties.scheme} ${identity.apiKey}` : identity.apiKey;
         } else {
           throw new Error("request can only be signed with `apiKey` locations `query` or `header`, but found: `" + signingProperties.in + "`");
@@ -30430,10 +30426,10 @@ var init_httpApiKeyAuth = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/util-identity-and-auth/httpAuthSchemes/httpBearerAuth.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/httpAuthSchemes/httpBearerAuth.js
 var HttpBearerAuthSigner;
 var init_httpBearerAuth = __esm({
-  "node_modules/@smithy/core/dist-es/util-identity-and-auth/httpAuthSchemes/httpBearerAuth.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/httpAuthSchemes/httpBearerAuth.js"() {
     init_protocols();
     HttpBearerAuthSigner = class {
       async sign(httpRequest, identity, signingProperties) {
@@ -30448,10 +30444,10 @@ var init_httpBearerAuth = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/util-identity-and-auth/httpAuthSchemes/noAuth.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/httpAuthSchemes/noAuth.js
 var NoAuthSigner;
 var init_noAuth = __esm({
-  "node_modules/@smithy/core/dist-es/util-identity-and-auth/httpAuthSchemes/noAuth.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/httpAuthSchemes/noAuth.js"() {
     NoAuthSigner = class {
       async sign(httpRequest, identity, signingProperties) {
         return httpRequest;
@@ -30460,19 +30456,19 @@ var init_noAuth = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/util-identity-and-auth/httpAuthSchemes/index.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/httpAuthSchemes/index.js
 var init_httpAuthSchemes = __esm({
-  "node_modules/@smithy/core/dist-es/util-identity-and-auth/httpAuthSchemes/index.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/httpAuthSchemes/index.js"() {
     init_httpApiKeyAuth();
     init_httpBearerAuth();
     init_noAuth();
   }
 });
 
-// node_modules/@smithy/core/dist-es/util-identity-and-auth/memoizeIdentityProvider.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/memoizeIdentityProvider.js
 var createIsIdentityExpiredFunction, EXPIRATION_MS, isIdentityExpired, doesIdentityRequireRefresh, memoizeIdentityProvider;
 var init_memoizeIdentityProvider = __esm({
-  "node_modules/@smithy/core/dist-es/util-identity-and-auth/memoizeIdentityProvider.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/memoizeIdentityProvider.js"() {
     createIsIdentityExpiredFunction = (expirationMs) => function isIdentityExpired2(identity) {
       return doesIdentityRequireRefresh(identity) && identity.expiration.getTime() - Date.now() < expirationMs;
     };
@@ -30530,9 +30526,9 @@ var init_memoizeIdentityProvider = __esm({
   }
 });
 
-// node_modules/@smithy/core/dist-es/util-identity-and-auth/index.js
+// node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/index.js
 var init_util_identity_and_auth = __esm({
-  "node_modules/@smithy/core/dist-es/util-identity-and-auth/index.js"() {
+  "node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/index.js"() {
     init_DefaultIdentityProviderConfig();
     init_httpAuthSchemes();
     init_memoizeIdentityProvider();
@@ -30553,7 +30549,7 @@ __export(dist_es_exports, {
   getHttpAuthSchemeEndpointRuleSetPlugin: () => getHttpAuthSchemeEndpointRuleSetPlugin,
   getHttpAuthSchemePlugin: () => getHttpAuthSchemePlugin,
   getHttpSigningPlugin: () => getHttpSigningPlugin,
-  getSmithyContext: () => getSmithyContext2,
+  getSmithyContext: () => getSmithyContext,
   httpAuthSchemeEndpointRuleSetMiddlewareOptions: () => httpAuthSchemeEndpointRuleSetMiddlewareOptions,
   httpAuthSchemeMiddleware: () => httpAuthSchemeMiddleware,
   httpAuthSchemeMiddlewareOptions: () => httpAuthSchemeMiddlewareOptions,
@@ -30567,12 +30563,12 @@ __export(dist_es_exports, {
 });
 var init_dist_es = __esm({
   "node_modules/@smithy/core/dist-es/index.js"() {
-    init_getSmithyContext2();
+    init_transport();
     init_middleware_http_auth_scheme();
     init_middleware_http_signing();
     init_normalizeProvider2();
     init_createPaginator();
-    init_requestBuilder2();
+    init_protocols();
     init_setFeature2();
     init_util_identity_and_auth();
   }
@@ -30862,12 +30858,12 @@ var import_node_path6, getNodeModulesParentDirs;
 var init_getNodeModulesParentDirs = __esm({
   "node_modules/@aws-sdk/core/dist-es/submodules/client/util-user-agent-node/getNodeModulesParentDirs.js"() {
     import_node_path6 = require("node:path");
-    getNodeModulesParentDirs = (dirname3) => {
+    getNodeModulesParentDirs = (dirname4) => {
       const cwd = process.cwd();
-      if (!dirname3) {
+      if (!dirname4) {
         return [cwd];
       }
-      const normalizedPath = (0, import_node_path6.normalize)(dirname3);
+      const normalizedPath = (0, import_node_path6.normalize)(dirname4);
       const parts = normalizedPath.split(import_node_path6.sep);
       const nodeModulesIndex = parts.indexOf("node_modules");
       const parentDir = nodeModulesIndex !== -1 ? parts.slice(0, nodeModulesIndex).join(import_node_path6.sep) : normalizedPath;
@@ -30942,8 +30938,8 @@ var init_getTypeScriptUserAgentPair = __esm({
         tscVersion = null;
         return void 0;
       }
-      const dirname3 = typeof __dirname !== "undefined" ? __dirname : void 0;
-      const nodeModulesParentDirs = getNodeModulesParentDirs(dirname3);
+      const dirname4 = typeof __dirname !== "undefined" ? __dirname : void 0;
+      const nodeModulesParentDirs = getNodeModulesParentDirs(dirname4);
       let versionFromApp;
       for (const nodeModulesParentDir of nodeModulesParentDirs) {
         try {
@@ -32682,10 +32678,10 @@ ${longDate}
 ${credentialScope}
 ${serde.toHex(hashedRequest)}`;
       }
-      getCanonicalPath({ path: path3 }) {
+      getCanonicalPath({ path: path4 }) {
         if (this.uriEscapePath) {
           const normalizedPathSegments = [];
-          for (const pathSegment of path3.split("/")) {
+          for (const pathSegment of path4.split("/")) {
             if (pathSegment?.length === 0)
               continue;
             if (pathSegment === ".")
@@ -32696,11 +32692,11 @@ ${serde.toHex(hashedRequest)}`;
               normalizedPathSegments.push(pathSegment);
             }
           }
-          const normalizedPath = `${path3?.startsWith("/") ? "/" : ""}${normalizedPathSegments.join("/")}${normalizedPathSegments.length > 0 && path3?.endsWith("/") ? "/" : ""}`;
+          const normalizedPath = `${path4?.startsWith("/") ? "/" : ""}${normalizedPathSegments.join("/")}${normalizedPathSegments.length > 0 && path4?.endsWith("/") ? "/" : ""}`;
           const doubleEncoded = protocols2.escapeUri(normalizedPath);
           return doubleEncoded.replace(/%2F/g, "/");
         }
-        return path3;
+        return path4;
       }
       validateResolvedCredentials(credentials) {
         if (typeof credentials !== "object" || typeof credentials.accessKeyId !== "string" || typeof credentials.secretAccessKey !== "string") {
@@ -34395,12 +34391,12 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             const password = request.password ?? "";
             auth = `${username}:${password}`;
           }
-          let path3 = request.path;
+          let path4 = request.path;
           if (queryString) {
-            path3 += `?${queryString}`;
+            path4 += `?${queryString}`;
           }
           if (request.fragment) {
-            path3 += `#${request.fragment}`;
+            path4 += `#${request.fragment}`;
           }
           let hostname = request.hostname ?? "";
           if (hostname[0] === "[" && hostname.endsWith("]")) {
@@ -34412,7 +34408,7 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             headers: request.headers,
             host: hostname,
             method: request.method,
-            path: path3,
+            path: path4,
             port: request.port,
             agent,
             auth
@@ -34813,16 +34809,16 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             reject(err);
           };
           const queryString = query ? protocols2.buildQueryString(query) : "";
-          let path3 = request.path;
+          let path4 = request.path;
           if (queryString) {
-            path3 += `?${queryString}`;
+            path4 += `?${queryString}`;
           }
           if (request.fragment) {
-            path3 += `#${request.fragment}`;
+            path4 += `#${request.fragment}`;
           }
           const clientHttp2Stream = session.request({
             ...request.headers,
-            [http22.constants.HTTP2_HEADER_PATH]: path3,
+            [http22.constants.HTTP2_HEADER_PATH]: path4,
             [http22.constants.HTTP2_HEADER_METHOD]: method
           });
           if (effectiveRequestTimeout) {
@@ -36312,11 +36308,11 @@ var init_SmithyRpcV2CborProtocol = __esm({
           }
         }
         const { service, operation: operation2 } = getSmithyContext(context);
-        const path3 = `/service/${service}/operation/${operation2}`;
+        const path4 = `/service/${service}/operation/${operation2}`;
         if (request.path.endsWith("/")) {
-          request.path += path3.slice(1);
+          request.path += path4.slice(1);
         } else {
-          request.path += path3;
+          request.path += path4;
         }
         return request;
       }
@@ -48874,12 +48870,12 @@ var require_ipv4 = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.Address4 = void 0;
     var common = __importStar2(require_common2());
-    var constants3 = __importStar2(require_constants7());
+    var constants4 = __importStar2(require_constants7());
     var address_error_1 = require_address_error();
-    var isCorrect4 = common.isCorrect(constants3.BITS);
+    var isCorrect4 = common.isCorrect(constants4.BITS);
     var Address4 = class _Address4 {
       constructor(address) {
-        this.groups = constants3.GROUPS;
+        this.groups = constants4.GROUPS;
         this.parsedAddress = [];
         this.parsedSubnet = "";
         this.subnet = "/32";
@@ -48888,15 +48884,15 @@ var require_ipv4 = __commonJS({
         this.isCorrect = isCorrect4;
         this.isInSubnet = common.isInSubnet;
         this.address = address;
-        const subnet = constants3.RE_SUBNET_STRING.exec(address);
+        const subnet = constants4.RE_SUBNET_STRING.exec(address);
         if (subnet) {
           this.parsedSubnet = subnet[0].replace("/", "");
           this.subnetMask = parseInt(this.parsedSubnet, 10);
           this.subnet = `/${this.subnetMask}`;
-          if (this.subnetMask < 0 || this.subnetMask > constants3.BITS) {
+          if (this.subnetMask < 0 || this.subnetMask > constants4.BITS) {
             throw new address_error_1.AddressError("Invalid subnet mask.");
           }
-          address = address.replace(constants3.RE_SUBNET_STRING, "");
+          address = address.replace(constants4.RE_SUBNET_STRING, "");
         }
         this.addressMinusSuffix = address;
         this.parsedAddress = this.parse(address);
@@ -48924,7 +48920,7 @@ var require_ipv4 = __commonJS({
        */
       parse(address) {
         const groups = address.split(".");
-        if (!address.match(constants3.RE_ADDRESS)) {
+        if (!address.match(constants4.RE_ADDRESS)) {
           throw new address_error_1.AddressError("Invalid IPv4 address.");
         }
         return groups;
@@ -48947,7 +48943,7 @@ var require_ipv4 = __commonJS({
        * address.subnetMask; // 24
        */
       static fromAddressAndMask(address, mask) {
-        const bits = common.prefixLengthFromMask(new _Address4(mask).bigInt(), constants3.BITS);
+        const bits = common.prefixLengthFromMask(new _Address4(mask).bigInt(), constants4.BITS);
         return new _Address4(`${address}/${bits}`);
       }
       /**
@@ -48961,9 +48957,9 @@ var require_ipv4 = __commonJS({
        */
       static fromAddressAndWildcardMask(address, wildcardMask) {
         const wildcard = new _Address4(wildcardMask).bigInt();
-        const allOnes = (BigInt(1) << BigInt(constants3.BITS)) - BigInt(1);
+        const allOnes = (BigInt(1) << BigInt(constants4.BITS)) - BigInt(1);
         const mask = wildcard ^ allOnes;
-        const bits = common.prefixLengthFromMask(mask, constants3.BITS);
+        const bits = common.prefixLengthFromMask(mask, constants4.BITS);
         return new _Address4(`${address}/${bits}`);
       }
       /**
@@ -48981,7 +48977,7 @@ var require_ipv4 = __commonJS({
        */
       static fromWildcard(input) {
         const groups = input.split(".");
-        if (groups.length !== constants3.GROUPS) {
+        if (groups.length !== constants4.GROUPS) {
           throw new address_error_1.AddressError("Wildcard pattern must have 4 octets");
         }
         let firstWildcard = -1;
@@ -48996,7 +48992,7 @@ var require_ipv4 = __commonJS({
         }
         const trailing = firstWildcard === -1 ? 0 : groups.length - firstWildcard;
         const replaced = groups.map((g5) => g5 === "*" ? "0" : g5);
-        const subnetBits = constants3.BITS - trailing * 8;
+        const subnetBits = constants4.BITS - trailing * 8;
         return new _Address4(`${replaced.join(".")}/${subnetBits}`);
       }
       /**
@@ -49066,7 +49062,7 @@ var require_ipv4 = __commonJS({
       toGroup6() {
         const output = [];
         let i5;
-        for (i5 = 0; i5 < constants3.GROUPS; i5 += 2) {
+        for (i5 = 0; i5 < constants4.GROUPS; i5 += 2) {
           output.push(`${common.stringToPaddedHex(this.parsedAddress[i5])}${common.stringToPaddedHex(this.parsedAddress[i5 + 1])}`);
         }
         return output.join(":");
@@ -49083,7 +49079,7 @@ var require_ipv4 = __commonJS({
        * @returns {bigint}
        */
       _startAddress() {
-        return BigInt(`0b${this.mask() + "0".repeat(constants3.BITS - this.subnetMask)}`);
+        return BigInt(`0b${this.mask() + "0".repeat(constants4.BITS - this.subnetMask)}`);
       }
       /**
        * The first address in the range given by this address' subnet.
@@ -49107,7 +49103,7 @@ var require_ipv4 = __commonJS({
        * @returns {bigint}
        */
       _endAddress() {
-        return BigInt(`0b${this.mask() + "1".repeat(constants3.BITS - this.subnetMask)}`);
+        return BigInt(`0b${this.mask() + "1".repeat(constants4.BITS - this.subnetMask)}`);
       }
       /**
        * The last address in the range given by this address' subnet
@@ -49132,7 +49128,7 @@ var require_ipv4 = __commonJS({
        * @returns {Address4}
        */
       subnetMaskAddress() {
-        return _Address4.fromBigInt(BigInt(`0b${"1".repeat(this.subnetMask)}${"0".repeat(constants3.BITS - this.subnetMask)}`));
+        return _Address4.fromBigInt(BigInt(`0b${"1".repeat(this.subnetMask)}${"0".repeat(constants4.BITS - this.subnetMask)}`));
       }
       /**
        * The Cisco-style wildcard mask, e.g. `0.0.0.255` for a `/24`. This is
@@ -49141,7 +49137,7 @@ var require_ipv4 = __commonJS({
        * @returns {Address4}
        */
       wildcardMask() {
-        return _Address4.fromBigInt(BigInt(`0b${"0".repeat(this.subnetMask)}${"1".repeat(constants3.BITS - this.subnetMask)}`));
+        return _Address4.fromBigInt(BigInt(`0b${"0".repeat(this.subnetMask)}${"1".repeat(constants4.BITS - this.subnetMask)}`));
       }
       /**
        * The network address in CIDR string form, e.g. `192.168.1.0/24` for
@@ -49283,7 +49279,7 @@ var require_ipv4 = __commonJS({
        */
       binaryZeroPad() {
         if (this._binaryZeroPad === void 0) {
-          this._binaryZeroPad = this.bigInt().toString(2).padStart(constants3.BITS, "0");
+          this._binaryZeroPad = this.bigInt().toString(2).padStart(constants4.BITS, "0");
         }
         return this._binaryZeroPad;
       }
@@ -49293,7 +49289,7 @@ var require_ipv4 = __commonJS({
        */
       groupForV6() {
         const segments = this.parsedAddress;
-        return this.address.replace(constants3.RE_ADDRESS, `<span class="hover-group group-v4 group-6">${segments.slice(0, 2).join(".")}</span>.<span class="hover-group group-v4 group-7">${segments.slice(2, 4).join(".")}</span>`);
+        return this.address.replace(constants4.RE_ADDRESS, `<span class="hover-group group-v4 group-6">${segments.slice(0, 2).join(".")}</span>.<span class="hover-group group-v4 group-7">${segments.slice(2, 4).join(".")}</span>`);
       }
     };
     exports2.Address4 = Address4;
@@ -53471,8 +53467,8 @@ var require_Client = __commonJS({
       /**
        * Set the working directory.
        */
-      async cd(path3) {
-        const validPath = await this.protectWhitespace(path3);
+      async cd(path4) {
+        const validPath = await this.protectWhitespace(path4);
         return this.send("CWD " + validPath);
       }
       /**
@@ -53485,8 +53481,8 @@ var require_Client = __commonJS({
        * Get the last modified time of a file. This is not supported by every FTP server, in which case
        * calling this method will throw an exception.
        */
-      async lastMod(path3) {
-        const validPath = await this.protectWhitespace(path3);
+      async lastMod(path4) {
+        const validPath = await this.protectWhitespace(path4);
         const res = await this.send(`MDTM ${validPath}`);
         const date2 = res.message.slice(4);
         return (0, parseListMLSD_1.parseMLSxDate)(date2);
@@ -53494,8 +53490,8 @@ var require_Client = __commonJS({
       /**
        * Get the size of a file.
        */
-      async size(path3) {
-        const validPath = await this.protectWhitespace(path3);
+      async size(path4) {
+        const validPath = await this.protectWhitespace(path4);
         const command = `SIZE ${validPath}`;
         const res = await this.send(command);
         const size = parseInt(res.message.slice(4), 10);
@@ -53522,8 +53518,8 @@ var require_Client = __commonJS({
        * You can ignore FTP error return codes which won't throw an exception if e.g.
        * the file doesn't exist.
        */
-      async remove(path3, ignoreErrorCodes = false) {
-        const validPath = await this.protectWhitespace(path3);
+      async remove(path4, ignoreErrorCodes = false) {
+        const validPath = await this.protectWhitespace(path4);
         if (ignoreErrorCodes) {
           return this.sendIgnoringError(`DELE ${validPath}`);
         }
@@ -53677,8 +53673,8 @@ var require_Client = __commonJS({
        *
        * @param [path]  Path to remote file or directory.
        */
-      async list(path3 = "") {
-        const validPath = await this.protectWhitespace(path3);
+      async list(path4 = "") {
+        const validPath = await this.protectWhitespace(path4);
         let lastError;
         for (const candidate of this.availableListCommands) {
           const command = validPath === "" ? candidate : `${candidate} ${validPath}`;
@@ -53848,21 +53844,21 @@ var require_Client = __commonJS({
       /**
        * Remove an empty directory, will fail if not empty.
        */
-      async removeEmptyDir(path3) {
-        const validPath = await this.protectWhitespace(path3);
+      async removeEmptyDir(path4) {
+        const validPath = await this.protectWhitespace(path4);
         return this.send(`RMD ${validPath}`);
       }
       /**
        * FTP servers can't handle filenames that have leading whitespace. This method transforms
        * a given path to fix that issue for most cases.
        */
-      async protectWhitespace(path3) {
-        if (!path3.startsWith(" ")) {
-          return path3;
+      async protectWhitespace(path4) {
+        if (!path4.startsWith(" ")) {
+          return path4;
         }
         const pwd = await this.pwd();
         const absolutePathPrefix = pwd.endsWith("/") ? pwd : pwd + "/";
-        return absolutePathPrefix + path3;
+        return absolutePathPrefix + path4;
       }
       async _exitAtCurrentDirectory(func) {
         const userDir = await this.pwd();
@@ -53939,11 +53935,11 @@ var require_Client = __commonJS({
       }
     };
     exports2.Client = Client3;
-    async function ensureLocalDirectory(path3) {
+    async function ensureLocalDirectory(path4) {
       try {
-        await fsStat(path3);
+        await fsStat(path4);
       } catch (_a2) {
-        await fsMkDir(path3, { recursive: true });
+        await fsMkDir(path4, { recursive: true });
       }
     }
     async function ignoreError(func) {
@@ -54513,23 +54509,23 @@ var require_estraverse = __commonJS({
           return false;
         }
       };
-      function Element(node, path3, wrap, ref) {
+      function Element(node, path4, wrap, ref) {
         this.node = node;
-        this.path = path3;
+        this.path = path4;
         this.wrap = wrap;
         this.ref = ref;
       }
       function Controller() {
       }
-      Controller.prototype.path = function path3() {
+      Controller.prototype.path = function path4() {
         var i5, iz, j5, jz, result, element;
-        function addToPath(result2, path4) {
-          if (Array.isArray(path4)) {
-            for (j5 = 0, jz = path4.length; j5 < jz; ++j5) {
-              result2.push(path4[j5]);
+        function addToPath(result2, path5) {
+          if (Array.isArray(path5)) {
+            for (j5 = 0, jz = path5.length; j5 < jz; ++j5) {
+              result2.push(path5[j5]);
             }
           } else {
-            result2.push(path4);
+            result2.push(path5);
           }
         }
         if (!this.__current.path) {
@@ -55414,16 +55410,16 @@ var require_util10 = __commonJS({
     }
     exports2.urlGenerate = urlGenerate;
     function normalize2(aPath) {
-      var path3 = aPath;
+      var path4 = aPath;
       var url = urlParse(aPath);
       if (url) {
         if (!url.path) {
           return aPath;
         }
-        path3 = url.path;
+        path4 = url.path;
       }
-      var isAbsolute = exports2.isAbsolute(path3);
-      var parts = path3.split(/\/+/);
+      var isAbsolute = exports2.isAbsolute(path4);
+      var parts = path4.split(/\/+/);
       for (var part, up = 0, i5 = parts.length - 1; i5 >= 0; i5--) {
         part = parts[i5];
         if (part === ".") {
@@ -55440,15 +55436,15 @@ var require_util10 = __commonJS({
           }
         }
       }
-      path3 = parts.join("/");
-      if (path3 === "") {
-        path3 = isAbsolute ? "/" : ".";
+      path4 = parts.join("/");
+      if (path4 === "") {
+        path4 = isAbsolute ? "/" : ".";
       }
       if (url) {
-        url.path = path3;
+        url.path = path4;
         return urlGenerate(url);
       }
-      return path3;
+      return path4;
     }
     exports2.normalize = normalize2;
     function join7(aRoot, aPath) {
@@ -66120,16 +66116,16 @@ var require_path = __commonJS({
         this.__childCache = null;
       };
       var Pp = Path.prototype;
-      function getChildCache(path3) {
-        return path3.__childCache || (path3.__childCache = /* @__PURE__ */ Object.create(null));
+      function getChildCache(path4) {
+        return path4.__childCache || (path4.__childCache = /* @__PURE__ */ Object.create(null));
       }
-      function getChildPath(path3, name) {
-        var cache5 = getChildCache(path3);
-        var actualChildValue = path3.getValueProperty(name);
+      function getChildPath(path4, name) {
+        var cache5 = getChildCache(path4);
+        var actualChildValue = path4.getValueProperty(name);
         var childPath = cache5[name];
         if (!hasOwn.call(cache5, name) || // Ensure consistency between cache and reality.
         childPath.value !== actualChildValue) {
-          childPath = cache5[name] = new path3.constructor(actualChildValue, path3, name);
+          childPath = cache5[name] = new path4.constructor(actualChildValue, path4, name);
         }
         return childPath;
       }
@@ -66141,12 +66137,12 @@ var require_path = __commonJS({
         for (var _i = 0; _i < arguments.length; _i++) {
           names[_i] = arguments[_i];
         }
-        var path3 = this;
+        var path4 = this;
         var count = names.length;
         for (var i5 = 0; i5 < count; ++i5) {
-          path3 = getChildPath(path3, names[i5]);
+          path4 = getChildPath(path4, names[i5]);
         }
-        return path3;
+        return path4;
       };
       Pp.each = function each(callback, context) {
         var childPaths = [];
@@ -66182,12 +66178,12 @@ var require_path = __commonJS({
       };
       function emptyMoves() {
       }
-      function getMoves(path3, offset, start, end) {
-        isArray.assert(path3.value);
+      function getMoves(path4, offset, start, end) {
+        isArray.assert(path4.value);
         if (offset === 0) {
           return emptyMoves;
         }
-        var length = path3.value.length;
+        var length = path4.value.length;
         if (length < 1) {
           return emptyMoves;
         }
@@ -66205,10 +66201,10 @@ var require_path = __commonJS({
         isNumber.assert(start);
         isNumber.assert(end);
         var moves = /* @__PURE__ */ Object.create(null);
-        var cache5 = getChildCache(path3);
+        var cache5 = getChildCache(path4);
         for (var i5 = start; i5 < end; ++i5) {
-          if (hasOwn.call(path3.value, i5)) {
-            var childPath = path3.get(i5);
+          if (hasOwn.call(path4.value, i5)) {
+            var childPath = path4.get(i5);
             if (childPath.name !== i5) {
               throw new Error("");
             }
@@ -66226,7 +66222,7 @@ var require_path = __commonJS({
               throw new Error("");
             }
             cache5[newIndex2] = childPath2;
-            path3.value[newIndex2] = childPath2.value;
+            path4.value[newIndex2] = childPath2.value;
           }
         };
       }
@@ -66301,34 +66297,34 @@ var require_path = __commonJS({
         }
         return pp.insertAt.apply(pp, insertAtArgs);
       };
-      function repairRelationshipWithParent(path3) {
-        if (!(path3 instanceof Path)) {
+      function repairRelationshipWithParent(path4) {
+        if (!(path4 instanceof Path)) {
           throw new Error("");
         }
-        var pp = path3.parentPath;
+        var pp = path4.parentPath;
         if (!pp) {
-          return path3;
+          return path4;
         }
         var parentValue = pp.value;
         var parentCache = getChildCache(pp);
-        if (parentValue[path3.name] === path3.value) {
-          parentCache[path3.name] = path3;
+        if (parentValue[path4.name] === path4.value) {
+          parentCache[path4.name] = path4;
         } else if (isArray.check(parentValue)) {
-          var i5 = parentValue.indexOf(path3.value);
+          var i5 = parentValue.indexOf(path4.value);
           if (i5 >= 0) {
-            parentCache[path3.name = i5] = path3;
+            parentCache[path4.name = i5] = path4;
           }
         } else {
-          parentValue[path3.name] = path3.value;
-          parentCache[path3.name] = path3;
+          parentValue[path4.name] = path4.value;
+          parentCache[path4.name] = path4;
         }
-        if (parentValue[path3.name] !== path3.value) {
+        if (parentValue[path4.name] !== path4.value) {
           throw new Error("");
         }
-        if (path3.parentPath.get(path3.name) !== path3) {
+        if (path4.parentPath.get(path4.name) !== path4) {
           throw new Error("");
         }
-        return path3;
+        return path4;
       }
       Pp.replace = function replace(replacement) {
         var results = [];
@@ -66408,11 +66404,11 @@ var require_scope = __commonJS({
       var Expression = namedTypes.Expression;
       var isArray = types3.builtInTypes.array;
       var b6 = types3.builders;
-      var Scope = function Scope2(path3, parentScope) {
+      var Scope = function Scope2(path4, parentScope) {
         if (!(this instanceof Scope2)) {
           throw new Error("Scope constructor cannot be invoked without 'new'");
         }
-        ScopeType.assert(path3.value);
+        ScopeType.assert(path4.value);
         var depth;
         if (parentScope) {
           if (!(parentScope instanceof Scope2)) {
@@ -66424,8 +66420,8 @@ var require_scope = __commonJS({
           depth = 0;
         }
         Object.defineProperties(this, {
-          path: { value: path3 },
-          node: { value: path3.value },
+          path: { value: path4 },
+          node: { value: path4.value },
           isGlobal: { value: !parentScope, enumerable: true },
           depth: { value: depth },
           parent: { value: parentScope },
@@ -66500,50 +66496,50 @@ var require_scope = __commonJS({
         this.scan();
         return this.types;
       };
-      function scanScope(path3, bindings, scopeTypes2) {
-        var node = path3.value;
+      function scanScope(path4, bindings, scopeTypes2) {
+        var node = path4.value;
         ScopeType.assert(node);
         if (namedTypes.CatchClause.check(node)) {
-          var param = path3.get("param");
+          var param = path4.get("param");
           if (param.value) {
             addPattern(param, bindings);
           }
         } else {
-          recursiveScanScope(path3, bindings, scopeTypes2);
+          recursiveScanScope(path4, bindings, scopeTypes2);
         }
       }
-      function recursiveScanScope(path3, bindings, scopeTypes2) {
-        var node = path3.value;
-        if (path3.parent && namedTypes.FunctionExpression.check(path3.parent.node) && path3.parent.node.id) {
-          addPattern(path3.parent.get("id"), bindings);
+      function recursiveScanScope(path4, bindings, scopeTypes2) {
+        var node = path4.value;
+        if (path4.parent && namedTypes.FunctionExpression.check(path4.parent.node) && path4.parent.node.id) {
+          addPattern(path4.parent.get("id"), bindings);
         }
         if (!node) {
         } else if (isArray.check(node)) {
-          path3.each(function(childPath) {
+          path4.each(function(childPath) {
             recursiveScanChild(childPath, bindings, scopeTypes2);
           });
         } else if (namedTypes.Function.check(node)) {
-          path3.get("params").each(function(paramPath) {
+          path4.get("params").each(function(paramPath) {
             addPattern(paramPath, bindings);
           });
-          recursiveScanChild(path3.get("body"), bindings, scopeTypes2);
+          recursiveScanChild(path4.get("body"), bindings, scopeTypes2);
         } else if (namedTypes.TypeAlias && namedTypes.TypeAlias.check(node) || namedTypes.InterfaceDeclaration && namedTypes.InterfaceDeclaration.check(node) || namedTypes.TSTypeAliasDeclaration && namedTypes.TSTypeAliasDeclaration.check(node) || namedTypes.TSInterfaceDeclaration && namedTypes.TSInterfaceDeclaration.check(node)) {
-          addTypePattern(path3.get("id"), scopeTypes2);
+          addTypePattern(path4.get("id"), scopeTypes2);
         } else if (namedTypes.VariableDeclarator.check(node)) {
-          addPattern(path3.get("id"), bindings);
-          recursiveScanChild(path3.get("init"), bindings, scopeTypes2);
+          addPattern(path4.get("id"), bindings);
+          recursiveScanChild(path4.get("init"), bindings, scopeTypes2);
         } else if (node.type === "ImportSpecifier" || node.type === "ImportNamespaceSpecifier" || node.type === "ImportDefaultSpecifier") {
           addPattern(
             // Esprima used to use the .name field to refer to the local
             // binding identifier for ImportSpecifier nodes, but .id for
             // ImportNamespaceSpecifier and ImportDefaultSpecifier nodes.
             // ESTree/Acorn/ESpree use .local for all three node types.
-            path3.get(node.local ? "local" : node.name ? "name" : "id"),
+            path4.get(node.local ? "local" : node.name ? "name" : "id"),
             bindings
           );
         } else if (Node.check(node) && !Expression.check(node)) {
           types3.eachField(node, function(name, child) {
-            var childPath = path3.get(name);
+            var childPath = path4.get(name);
             if (!pathHasValue(childPath, child)) {
               throw new Error("");
             }
@@ -66551,34 +66547,34 @@ var require_scope = __commonJS({
           });
         }
       }
-      function pathHasValue(path3, value) {
-        if (path3.value === value) {
+      function pathHasValue(path4, value) {
+        if (path4.value === value) {
           return true;
         }
-        if (Array.isArray(path3.value) && path3.value.length === 0 && Array.isArray(value) && value.length === 0) {
+        if (Array.isArray(path4.value) && path4.value.length === 0 && Array.isArray(value) && value.length === 0) {
           return true;
         }
         return false;
       }
-      function recursiveScanChild(path3, bindings, scopeTypes2) {
-        var node = path3.value;
+      function recursiveScanChild(path4, bindings, scopeTypes2) {
+        var node = path4.value;
         if (!node || Expression.check(node)) {
         } else if (namedTypes.FunctionDeclaration.check(node) && node.id !== null) {
-          addPattern(path3.get("id"), bindings);
+          addPattern(path4.get("id"), bindings);
         } else if (namedTypes.ClassDeclaration && namedTypes.ClassDeclaration.check(node)) {
-          addPattern(path3.get("id"), bindings);
+          addPattern(path4.get("id"), bindings);
         } else if (ScopeType.check(node)) {
           if (namedTypes.CatchClause.check(node) && // TODO Broaden this to accept any pattern.
           namedTypes.Identifier.check(node.param)) {
             var catchParamName = node.param.name;
             var hadBinding = hasOwn.call(bindings, catchParamName);
-            recursiveScanScope(path3.get("body"), bindings, scopeTypes2);
+            recursiveScanScope(path4.get("body"), bindings, scopeTypes2);
             if (!hadBinding) {
               delete bindings[catchParamName];
             }
           }
         } else {
-          recursiveScanScope(path3, bindings, scopeTypes2);
+          recursiveScanScope(path4, bindings, scopeTypes2);
         }
       }
       function addPattern(patternPath, bindings) {
@@ -66914,53 +66910,53 @@ var require_node_path = __commonJS({
       NPp.firstInStatement = function() {
         return firstInStatement(this);
       };
-      function firstInStatement(path3) {
-        for (var node, parent; path3.parent; path3 = path3.parent) {
-          node = path3.node;
-          parent = path3.parent.node;
-          if (n3.BlockStatement.check(parent) && path3.parent.name === "body" && path3.name === 0) {
+      function firstInStatement(path4) {
+        for (var node, parent; path4.parent; path4 = path4.parent) {
+          node = path4.node;
+          parent = path4.parent.node;
+          if (n3.BlockStatement.check(parent) && path4.parent.name === "body" && path4.name === 0) {
             if (parent.body[0] !== node) {
               throw new Error("Nodes must be equal");
             }
             return true;
           }
-          if (n3.ExpressionStatement.check(parent) && path3.name === "expression") {
+          if (n3.ExpressionStatement.check(parent) && path4.name === "expression") {
             if (parent.expression !== node) {
               throw new Error("Nodes must be equal");
             }
             return true;
           }
-          if (n3.SequenceExpression.check(parent) && path3.parent.name === "expressions" && path3.name === 0) {
+          if (n3.SequenceExpression.check(parent) && path4.parent.name === "expressions" && path4.name === 0) {
             if (parent.expressions[0] !== node) {
               throw new Error("Nodes must be equal");
             }
             continue;
           }
-          if (n3.CallExpression.check(parent) && path3.name === "callee") {
+          if (n3.CallExpression.check(parent) && path4.name === "callee") {
             if (parent.callee !== node) {
               throw new Error("Nodes must be equal");
             }
             continue;
           }
-          if (n3.MemberExpression.check(parent) && path3.name === "object") {
+          if (n3.MemberExpression.check(parent) && path4.name === "object") {
             if (parent.object !== node) {
               throw new Error("Nodes must be equal");
             }
             continue;
           }
-          if (n3.ConditionalExpression.check(parent) && path3.name === "test") {
+          if (n3.ConditionalExpression.check(parent) && path4.name === "test") {
             if (parent.test !== node) {
               throw new Error("Nodes must be equal");
             }
             continue;
           }
-          if (isBinary(parent) && path3.name === "left") {
+          if (isBinary(parent) && path4.name === "left") {
             if (parent.left !== node) {
               throw new Error("Nodes must be equal");
             }
             continue;
           }
-          if (n3.UnaryExpression.check(parent) && !parent.prefix && path3.name === "argument") {
+          if (n3.UnaryExpression.check(parent) && !parent.prefix && path4.name === "argument") {
             if (parent.argument !== node) {
               throw new Error("Nodes must be equal");
             }
@@ -67130,36 +67126,36 @@ var require_path_visitor = __commonJS({
       };
       PVp.reset = function(_path) {
       };
-      PVp.visitWithoutReset = function(path3) {
+      PVp.visitWithoutReset = function(path4) {
         if (this instanceof this.Context) {
-          return this.visitor.visitWithoutReset(path3);
+          return this.visitor.visitWithoutReset(path4);
         }
-        if (!(path3 instanceof NodePath)) {
+        if (!(path4 instanceof NodePath)) {
           throw new Error("");
         }
-        var value = path3.value;
+        var value = path4.value;
         var methodName = value && typeof value === "object" && typeof value.type === "string" && this._methodNameTable[value.type];
         if (methodName) {
-          var context = this.acquireContext(path3);
+          var context = this.acquireContext(path4);
           try {
             return context.invokeVisitorMethod(methodName);
           } finally {
             this.releaseContext(context);
           }
         } else {
-          return visitChildren(path3, this);
+          return visitChildren(path4, this);
         }
       };
-      function visitChildren(path3, visitor) {
-        if (!(path3 instanceof NodePath)) {
+      function visitChildren(path4, visitor) {
+        if (!(path4 instanceof NodePath)) {
           throw new Error("");
         }
         if (!(visitor instanceof PathVisitor)) {
           throw new Error("");
         }
-        var value = path3.value;
+        var value = path4.value;
         if (isArray.check(value)) {
-          path3.each(visitor.visitWithoutReset, visitor);
+          path4.each(visitor.visitWithoutReset, visitor);
         } else if (!isObject.check(value)) {
         } else {
           var childNames = types3.getFieldNames(value);
@@ -67173,19 +67169,19 @@ var require_path_visitor = __commonJS({
             if (!hasOwn.call(value, childName)) {
               value[childName] = types3.getFieldValue(value, childName);
             }
-            childPaths.push(path3.get(childName));
+            childPaths.push(path4.get(childName));
           }
           for (var i5 = 0; i5 < childCount; ++i5) {
             visitor.visitWithoutReset(childPaths[i5]);
           }
         }
-        return path3.value;
+        return path4.value;
       }
-      PVp.acquireContext = function(path3) {
+      PVp.acquireContext = function(path4) {
         if (this._reusableContextStack.length === 0) {
-          return new this.Context(path3);
+          return new this.Context(path4);
         }
-        return this._reusableContextStack.pop().reset(path3);
+        return this._reusableContextStack.pop().reset(path4);
       };
       PVp.releaseContext = function(context) {
         if (!(context instanceof this.Context)) {
@@ -67201,14 +67197,14 @@ var require_path_visitor = __commonJS({
         return this._changeReported;
       };
       function makeContextConstructor(visitor) {
-        function Context(path3) {
+        function Context(path4) {
           if (!(this instanceof Context)) {
             throw new Error("");
           }
           if (!(this instanceof PathVisitor)) {
             throw new Error("");
           }
-          if (!(path3 instanceof NodePath)) {
+          if (!(path4 instanceof NodePath)) {
             throw new Error("");
           }
           Object.defineProperty(this, "visitor", {
@@ -67217,7 +67213,7 @@ var require_path_visitor = __commonJS({
             enumerable: true,
             configurable: false
           });
-          this.currentPath = path3;
+          this.currentPath = path4;
           this.needToCallTraverse = true;
           Object.seal(this);
         }
@@ -67230,14 +67226,14 @@ var require_path_visitor = __commonJS({
         return Context;
       }
       var sharedContextProtoMethods = /* @__PURE__ */ Object.create(null);
-      sharedContextProtoMethods.reset = function reset(path3) {
+      sharedContextProtoMethods.reset = function reset(path4) {
         if (!(this instanceof this.Context)) {
           throw new Error("");
         }
-        if (!(path3 instanceof NodePath)) {
+        if (!(path4 instanceof NodePath)) {
           throw new Error("");
         }
-        this.currentPath = path3;
+        this.currentPath = path4;
         this.needToCallTraverse = true;
         return this;
       };
@@ -67260,34 +67256,34 @@ var require_path_visitor = __commonJS({
         if (this.needToCallTraverse !== false) {
           throw new Error("Must either call this.traverse or return false in " + methodName);
         }
-        var path3 = this.currentPath;
-        return path3 && path3.value;
+        var path4 = this.currentPath;
+        return path4 && path4.value;
       };
-      sharedContextProtoMethods.traverse = function traverse(path3, newVisitor) {
+      sharedContextProtoMethods.traverse = function traverse(path4, newVisitor) {
         if (!(this instanceof this.Context)) {
           throw new Error("");
         }
-        if (!(path3 instanceof NodePath)) {
+        if (!(path4 instanceof NodePath)) {
           throw new Error("");
         }
         if (!(this.currentPath instanceof NodePath)) {
           throw new Error("");
         }
         this.needToCallTraverse = false;
-        return visitChildren(path3, PathVisitor.fromMethodsObject(newVisitor || this.visitor));
+        return visitChildren(path4, PathVisitor.fromMethodsObject(newVisitor || this.visitor));
       };
-      sharedContextProtoMethods.visit = function visit2(path3, newVisitor) {
+      sharedContextProtoMethods.visit = function visit2(path4, newVisitor) {
         if (!(this instanceof this.Context)) {
           throw new Error("");
         }
-        if (!(path3 instanceof NodePath)) {
+        if (!(path4 instanceof NodePath)) {
           throw new Error("");
         }
         if (!(this.currentPath instanceof NodePath)) {
           throw new Error("");
         }
         this.needToCallTraverse = false;
-        return PathVisitor.fromMethodsObject(newVisitor || this.visitor).visitWithoutReset(path3);
+        return PathVisitor.fromMethodsObject(newVisitor || this.visitor).visitWithoutReset(path4);
       };
       sharedContextProtoMethods.reportChanged = function reportChanged() {
         this.visitor.reportChanged();
@@ -68492,10 +68488,10 @@ function degenerator(code, _names) {
   do {
     lastNamesLength = names.length;
     (0, import_ast_types.visit)(ast, {
-      visitVariableDeclaration(path3) {
-        if (path3.node.declarations) {
-          for (let i5 = 0; i5 < path3.node.declarations.length; i5++) {
-            const declaration = path3.node.declarations[i5];
+      visitVariableDeclaration(path4) {
+        if (path4.node.declarations) {
+          for (let i5 = 0; i5 < path4.node.declarations.length; i5++) {
+            const declaration = path4.node.declarations[i5];
             if (import_ast_types.namedTypes.VariableDeclarator.check(declaration) && import_ast_types.namedTypes.Identifier.check(declaration.init) && import_ast_types.namedTypes.Identifier.check(declaration.id) && checkName(declaration.init.name, names) && !checkName(declaration.id.name, names)) {
               names.push(declaration.id.name);
             }
@@ -68503,18 +68499,18 @@ function degenerator(code, _names) {
         }
         return false;
       },
-      visitAssignmentExpression(path3) {
-        if (import_ast_types.namedTypes.Identifier.check(path3.node.left) && import_ast_types.namedTypes.Identifier.check(path3.node.right) && checkName(path3.node.right.name, names) && !checkName(path3.node.left.name, names)) {
-          names.push(path3.node.left.name);
+      visitAssignmentExpression(path4) {
+        if (import_ast_types.namedTypes.Identifier.check(path4.node.left) && import_ast_types.namedTypes.Identifier.check(path4.node.right) && checkName(path4.node.right.name, names) && !checkName(path4.node.left.name, names)) {
+          names.push(path4.node.left.name);
         }
         return false;
       },
-      visitFunction(path3) {
-        if (path3.node.id) {
+      visitFunction(path4) {
+        if (path4.node.id) {
           let shouldDegenerate = false;
-          (0, import_ast_types.visit)(path3.node, {
-            visitCallExpression(path4) {
-              if (checkNames(path4.node, names)) {
+          (0, import_ast_types.visit)(path4.node, {
+            visitCallExpression(path5) {
+              if (checkNames(path5.node, names)) {
                 shouldDegenerate = true;
               }
               return false;
@@ -68523,28 +68519,28 @@ function degenerator(code, _names) {
           if (!shouldDegenerate) {
             return false;
           }
-          path3.node.async = true;
-          if (!checkName(path3.node.id.name, names)) {
-            names.push(path3.node.id.name);
+          path4.node.async = true;
+          if (!checkName(path4.node.id.name, names)) {
+            names.push(path4.node.id.name);
           }
         }
-        this.traverse(path3);
+        this.traverse(path4);
       }
     });
   } while (lastNamesLength !== names.length);
   (0, import_ast_types.visit)(ast, {
-    visitCallExpression(path3) {
-      if (checkNames(path3.node, names)) {
+    visitCallExpression(path4) {
+      if (checkNames(path4.node, names)) {
         const delegate = false;
-        const { name, parent: { node: pNode } } = path3;
-        const expr = import_ast_types.builders.awaitExpression(path3.node, delegate);
+        const { name, parent: { node: pNode } } = path4;
+        const expr = import_ast_types.builders.awaitExpression(path4.node, delegate);
         if (import_ast_types.namedTypes.CallExpression.check(pNode)) {
           pNode.arguments[name] = expr;
         } else {
           pNode[name] = expr;
         }
       }
-      this.traverse(path3);
+      this.traverse(path4);
     }
   });
   return (0, import_escodegen.generate)(ast);
@@ -73730,11 +73726,12 @@ function getIDToken(aud) {
 
 // src/assumeRole.ts
 var import_node_assert = __toESM(require("node:assert"));
-var import_node_fs2 = __toESM(require("node:fs"));
 var import_node_path8 = __toESM(require("node:path"));
 var import_client_sts2 = __toESM(require_dist_cjs19());
 
 // src/helpers.ts
+var fs3 = __toESM(require("node:fs"));
+var path = __toESM(require("node:path"));
 var import_client_sts = __toESM(require_dist_cjs19());
 var MAX_TAG_VALUE_LENGTH = 256;
 var SANITIZATION_CHARACTER = "_";
@@ -73951,6 +73948,88 @@ function getBooleanInput(name, options) {
 Support boolean input list: \`true | True | TRUE | false | False | FALSE\``
   );
 }
+var O_NOFOLLOW = fs3.constants.O_NOFOLLOW ?? 0;
+function isAllowListed(filePath) {
+  const KUBERNETES_TOKEN_PATH_REGEX = /^\/var\/run\/secrets\/[^/]+\/serviceaccount\/token$/;
+  if (process.platform !== "win32") {
+    return KUBERNETES_TOKEN_PATH_REGEX.test(path.posix.normalize(filePath));
+  }
+  return false;
+}
+function isSymlink(filePath) {
+  try {
+    return fs3.lstatSync(filePath).isSymbolicLink();
+  } catch (err) {
+    if (err.code === "ENOENT") return false;
+    throw err;
+  }
+}
+function refuseSymlinkOnPath(filePath) {
+  const parent = path.dirname(filePath);
+  if (parent !== filePath && isSymlink(parent)) {
+    throw new Error(`Refusing ${filePath} (parent directory is a symbolic link)`);
+  }
+  if (isSymlink(filePath)) {
+    throw new Error(`Refusing ${filePath} (path is a symbolic link)`);
+  }
+}
+function assertRegularFile(fd, filePath) {
+  const stats = fs3.fstatSync(fd);
+  if (!stats.isFile()) {
+    throw new Error(`${filePath} (path is not a regular file)`);
+  }
+}
+function readFileUtf8(filePath) {
+  const allowSymlink = isAllowListed(filePath);
+  if (!allowSymlink) {
+    refuseSymlinkOnPath(filePath);
+  }
+  const openFlags = fs3.constants.O_RDONLY | (allowSymlink ? 0 : O_NOFOLLOW);
+  let fd;
+  try {
+    fd = fs3.openSync(filePath, openFlags);
+  } catch (err) {
+    const code = err.code;
+    if (code === "ENOENT") return null;
+    if (code === "ELOOP") {
+      throw new Error(`Refusing ${filePath} (path is a symbolic link)`);
+    }
+    throw err;
+  }
+  try {
+    assertRegularFile(fd, filePath);
+    return fs3.readFileSync(fd, "utf-8");
+  } finally {
+    fs3.closeSync(fd);
+  }
+}
+function writeFileUtf8(filePath, content, mode = 384) {
+  refuseSymlinkOnPath(filePath);
+  let fd;
+  try {
+    fd = fs3.openSync(filePath, fs3.constants.O_WRONLY | fs3.constants.O_CREAT | fs3.constants.O_TRUNC | O_NOFOLLOW, mode);
+  } catch (err) {
+    if (err.code === "ELOOP") {
+      throw new Error(`Refusing ${filePath} (path is a symbolic link)`);
+    }
+    throw err;
+  }
+  try {
+    assertRegularFile(fd, filePath);
+    if (process.platform !== "win32") {
+      fs3.fchmodSync(fd, mode);
+    }
+    fs3.writeFileSync(fd, content);
+  } finally {
+    fs3.closeSync(fd);
+  }
+}
+function mkdir2(dir, mode = 448) {
+  fs3.mkdirSync(dir, { recursive: true, mode });
+  if (isSymlink(dir)) {
+    throw new Error(`Refusing ${dir} (path is a symbolic link)`);
+  }
+}
 
 // src/assumeRole.ts
 async function assumeRoleWithOIDC(params, client, webIdentityToken) {
@@ -73974,12 +74053,12 @@ async function assumeRoleWithWebIdentityTokenFile(params, client, webIdentityTok
     "webIdentityTokenFile provided. Will call sts:AssumeRoleWithWebIdentity and take session tags from token contents."
   );
   const webIdentityTokenFilePath = import_node_path8.default.isAbsolute(webIdentityTokenFile) ? webIdentityTokenFile : import_node_path8.default.join(workspace, webIdentityTokenFile);
-  if (!import_node_fs2.default.existsSync(webIdentityTokenFilePath)) {
+  const webIdentityToken = readFileUtf8(webIdentityTokenFilePath);
+  if (webIdentityToken === null) {
     throw new Error(`Web identity token file does not exist: ${webIdentityTokenFilePath}`);
   }
   info("Assuming role with web identity token file");
   try {
-    const webIdentityToken = import_node_fs2.default.readFileSync(webIdentityTokenFilePath, "utf8");
     delete params.Tags;
     const creds = await client.send(
       new import_client_sts2.AssumeRoleWithWebIdentityCommand({
@@ -75444,9 +75523,8 @@ var CredentialsClient = class {
 };
 
 // src/profileManager.ts
-var fs4 = __toESM(require("node:fs"));
 var os6 = __toESM(require("node:os"));
-var path2 = __toESM(require("node:path"));
+var path3 = __toESM(require("node:path"));
 function parseIni2(iniData) {
   const result = {};
   let currentSection;
@@ -75494,19 +75572,17 @@ function stringifyIni(data3) {
 `;
 }
 function getProfileFilePaths() {
-  const credentialsPath = process.env.AWS_SHARED_CREDENTIALS_FILE || path2.join(os6.homedir(), ".aws", "credentials");
-  const configPath = process.env.AWS_CONFIG_FILE || path2.join(os6.homedir(), ".aws", "config");
+  const credentialsPath = process.env.AWS_SHARED_CREDENTIALS_FILE || path3.join(os6.homedir(), ".aws", "credentials");
+  const configPath = process.env.AWS_CONFIG_FILE || path3.join(os6.homedir(), ".aws", "config");
   return {
     credentials: credentialsPath,
     config: configPath
   };
 }
 function ensureAwsDirectoryExists(filePath) {
-  const dir = path2.dirname(filePath);
-  if (!fs4.existsSync(dir)) {
-    debug(`Creating directory: ${dir}`);
-    fs4.mkdirSync(dir, { recursive: true, mode: 448 });
-  }
+  const dir = path3.dirname(filePath);
+  debug(`Ensuring directory exists: ${dir}`);
+  mkdir2(dir, 448);
 }
 function validateProfileName(profileName) {
   if (!profileName || profileName.trim() === "") {
@@ -75523,12 +75599,8 @@ function validateProfileName(profileName) {
   }
 }
 function mergeProfileSection(filePath, sectionName, data3, overwriteAwsProfile) {
-  let existingContent = {};
-  if (fs4.existsSync(filePath)) {
-    debug(`Reading existing file: ${filePath}`);
-    const fileContent = fs4.readFileSync(filePath, "utf-8");
-    existingContent = parseIni2(fileContent);
-  }
+  const fileContent = readFileUtf8(filePath);
+  const existingContent = fileContent === null ? {} : parseIni2(fileContent);
   if (existingContent[sectionName] && !overwriteAwsProfile) {
     throw new Error(
       `Profile with name "${sectionName}" already exists. Please use the overwrite-aws-profile input if you want to overwrite existing profiles.`
@@ -75537,7 +75609,7 @@ function mergeProfileSection(filePath, sectionName, data3, overwriteAwsProfile) 
   existingContent[sectionName] = data3;
   const content = stringifyIni(existingContent);
   debug(`Writing profile to ${filePath}`);
-  fs4.writeFileSync(filePath, content, { mode: 384 });
+  writeFileUtf8(filePath, content, 384);
 }
 function writeProfileFiles(profileName, credentials, region, overwriteAwsProfile) {
   try {
