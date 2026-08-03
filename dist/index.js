@@ -5,11 +5,20 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __esm = (fn, res) => function __init() {
-  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+var __esm = (fn, res, err) => function __init() {
+  if (err) throw err[0];
+  try {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  } catch (e5) {
+    throw err = [e5], e5;
+  }
 };
 var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  try {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  } catch (e5) {
+    throw mod = 0, e5;
+  }
 };
 var __export = (target, all) => {
   for (var name in all)
@@ -28857,7 +28866,7 @@ var init_constants4 = __esm({
     TRANSIENT_ERROR_CODES = ["TimeoutError", "RequestTimeout", "RequestTimeoutException"];
     TRANSIENT_ERROR_STATUS_CODES = [500, 502, 503, 504];
     NODEJS_TIMEOUT_ERROR_CODES = ["ECONNRESET", "ECONNREFUSED", "EPIPE", "ETIMEDOUT"];
-    NODEJS_NETWORK_ERROR_CODES = ["EHOSTUNREACH", "ENETUNREACH", "ENOTFOUND"];
+    NODEJS_NETWORK_ERROR_CODES = ["EHOSTUNREACH", "ENETUNREACH", "ENOTFOUND", "EAI_AGAIN"];
   }
 });
 
@@ -29019,9 +29028,6 @@ function bindRetryMiddleware(isStreamingPayload2) {
           try {
             retryToken = await retryStrategy.refreshRetryTokenForRetry(retryToken, retryErrorInfo);
           } catch (refreshError) {
-            if (typeof refreshError.$backoff === "number") {
-              await cooldown(refreshError.$backoff);
-            }
             if (!lastError.$metadata) {
               lastError.$metadata = {};
             }
@@ -29031,8 +29037,10 @@ function bindRetryMiddleware(isStreamingPayload2) {
           }
           attempts = retryToken.getRetryCount();
           const delay = retryToken.getRetryDelay();
-          totalRetryDelay += delay;
-          await cooldown(delay);
+          totalRetryDelay += (retryToken?.$retryLog?.acquisitionDelay ?? 0) + delay;
+          if (delay > 0) {
+            await cooldown(delay);
+          }
         }
       }
     } else {
@@ -29267,6 +29275,9 @@ var init_DefaultRetryToken = __esm({
       count;
       cost;
       longPoll;
+      $retryLog = {
+        acquisitionDelay: 0
+      };
       constructor(delay, count, cost, longPoll) {
         this.delay = delay;
         this.count = count;
@@ -29318,8 +29329,8 @@ var init_StandardRetryStrategy = __esm({
     };
     StandardRetryStrategy = class {
       mode = RETRY_MODES.STANDARD;
-      capacity = INITIAL_RETRY_TOKENS;
       retryBackoffStrategy;
+      capacity = INITIAL_RETRY_TOKENS;
       maxAttemptsProvider;
       baseDelay;
       constructor(arg1) {
@@ -29353,13 +29364,17 @@ var init_StandardRetryStrategy = __esm({
             retryDelay = Math.max(delayFromErrorType, Math.min(errorInfo.retryAfterHint.getTime() - Date.now(), delayFromErrorType + 5e3));
           }
           if (!shouldRetry) {
-            throw Object.assign(new Error("No retry token available"), {
-              $backoff: Retry.v2026 && retryCode === refusal.capacity && isLongPoll ? retryDelay : 0
-            });
+            const longPollBackoff = Retry.v2026 && retryCode === refusal.capacity && isLongPoll ? retryDelay : 0;
+            if (longPollBackoff > 0) {
+              await new Promise((r5) => setTimeout(r5, longPollBackoff));
+            }
           } else {
             const capacityCost = this.getCapacityCost(errorType);
             this.capacity -= capacityCost;
-            return new DefaultRetryToken(retryDelay, token.getRetryCount() + 1, capacityCost, token.isLongPoll?.() ?? false);
+            const nextToken = new DefaultRetryToken(0, token.getRetryCount() + 1, capacityCost, token.isLongPoll?.() ?? false);
+            await new Promise((r5) => setTimeout(r5, retryDelay));
+            nextToken.$retryLog.acquisitionDelay = retryDelay;
+            return nextToken;
           }
         }
         throw new Error("No retry token available");
@@ -29454,11 +29469,10 @@ var init_ConfiguredRetryStrategy = __esm({
         } else {
           this.computeNextBackoffDelay = computeNextBackoffDelay;
         }
-      }
-      async refreshRetryTokenForRetry(tokenToRenew, errorInfo) {
-        const token = await super.refreshRetryTokenForRetry(tokenToRenew, errorInfo);
-        token.getRetryDelay = () => this.computeNextBackoffDelay(token.getRetryCount());
-        return token;
+        this.retryBackoffStrategy.computeNextBackoffDelay = (completedAttempt) => {
+          const nextAttempt = completedAttempt + 1;
+          return this.computeNextBackoffDelay(nextAttempt);
+        };
       }
     };
   }
@@ -29658,6 +29672,7 @@ var init_configurations = __esm({
     init_AdaptiveRetryStrategy();
     init_StandardRetryStrategy();
     init_config3();
+    init_retries_2026_config();
     ENV_MAX_ATTEMPTS = "AWS_MAX_ATTEMPTS";
     CONFIG_MAX_ATTEMPTS = "max_attempts";
     NODE_MAX_ATTEMPT_CONFIG_OPTIONS = {
@@ -29683,13 +29698,27 @@ var init_configurations = __esm({
       },
       default: DEFAULT_MAX_ATTEMPTS
     };
-    resolveRetryConfig = (input) => {
+    resolveRetryConfig = (input, defaults) => {
       const { retryStrategy, retryMode } = input;
-      const maxAttempts = normalizeProvider(input.maxAttempts ?? DEFAULT_MAX_ATTEMPTS);
+      const { defaultMaxAttempts = DEFAULT_MAX_ATTEMPTS, defaultBaseDelay = Retry.delay() } = defaults ?? {};
+      const maxAttemptsProvider = normalizeProvider(input.maxAttempts ?? defaultMaxAttempts);
       let controller = retryStrategy ? Promise.resolve(retryStrategy) : void 0;
-      const getDefault = async () => await normalizeProvider(retryMode)() === RETRY_MODES.ADAPTIVE ? new AdaptiveRetryStrategy(maxAttempts) : new StandardRetryStrategy(maxAttempts);
+      const getDefault = async () => {
+        const maxAttempts = await maxAttemptsProvider();
+        const adaptive = await normalizeProvider(retryMode)() === RETRY_MODES.ADAPTIVE;
+        if (adaptive) {
+          return new AdaptiveRetryStrategy(maxAttemptsProvider, {
+            maxAttempts,
+            baseDelay: defaultBaseDelay
+          });
+        }
+        return new StandardRetryStrategy({
+          maxAttempts,
+          baseDelay: defaultBaseDelay
+        });
+      };
       return Object.assign(input, {
-        maxAttempts,
+        maxAttempts: maxAttemptsProvider,
         retryStrategy: () => controller ??= getDefault()
       });
     };
@@ -32302,6 +32331,7 @@ var init_AwsSdkSigV4Signer = __esm({
             signingName = second?.signingName ?? signingName;
           }
         }
+        signingProperties._preRequestSystemClockOffset = config.systemClockOffset;
         const signedRequest = await signer.sign(httpRequest, {
           signingDate: getSkewCorrectedDate(config.systemClockOffset),
           signingRegion,
@@ -32311,14 +32341,18 @@ var init_AwsSdkSigV4Signer = __esm({
       }
       errorHandler(signingProperties) {
         return (error3) => {
-          const serverTime = error3.ServerTime ?? getDateHeader(error3.$response);
+          const errorException = error3;
+          const serverTime = errorException.ServerTime ?? getDateHeader(errorException.$response);
           if (serverTime) {
             const config = throwSigningPropertyError("config", signingProperties.config);
-            const initialSystemClockOffset = config.systemClockOffset;
-            config.systemClockOffset = getUpdatedSystemClockOffset(serverTime, config.systemClockOffset);
-            const clockSkewCorrected = config.systemClockOffset !== initialSystemClockOffset;
-            if (clockSkewCorrected && error3.$metadata) {
-              error3.$metadata.clockSkewCorrected = true;
+            const preRequestOffset = signingProperties._preRequestSystemClockOffset;
+            const newOffset = getUpdatedSystemClockOffset(serverTime, config.systemClockOffset);
+            const isLocalCorrection = newOffset !== config.systemClockOffset;
+            const isConcurrentCorrection = preRequestOffset !== void 0 && preRequestOffset !== newOffset;
+            const clockSkewCorrected = isLocalCorrection || isConcurrentCorrection;
+            if (clockSkewCorrected && errorException.$metadata) {
+              config.systemClockOffset = newOffset;
+              errorException.$metadata.clockSkewCorrected = true;
             }
           }
           throw error3;
@@ -32351,6 +32385,7 @@ var init_AwsSdkSigV4ASigner = __esm({
         const { config, signer, signingRegion, signingRegionSet, signingName } = await validateSigningProperties(signingProperties);
         const configResolvedSigningRegionSet = await config.sigv4aSigningRegionSet?.();
         const multiRegionOverride = (configResolvedSigningRegionSet ?? signingRegionSet ?? [signingRegion]).join(",");
+        signingProperties._preRequestSystemClockOffset = config.systemClockOffset;
         const signedRequest = await signer.sign(httpRequest, {
           signingDate: getSkewCorrectedDate(config.systemClockOffset),
           signingRegion: multiRegionOverride,
@@ -33625,10 +33660,10 @@ var require_package = __commonJS({
     module2.exports = {
       name: "@aws-sdk/client-sts",
       description: "AWS SDK for JavaScript Sts Client for Node.js, Browser and React Native",
-      version: "3.1049.0",
+      version: "3.1064.0",
       scripts: {
         build: "concurrently 'yarn:build:types' 'yarn:build:es' && yarn build:cjs",
-        "build:cjs": "node ../../scripts/compilation/inline client-sts",
+        "build:cjs": "node ../../scripts/compilation/inline",
         "build:es": "tsc -p tsconfig.es.json",
         "build:include:deps": 'yarn g:turbo run build -F="$npm_package_name"',
         "build:types": "premove ./dist-types tsconfig.types.tsbuildinfo && tsc -p tsconfig.types.json",
@@ -33651,18 +33686,18 @@ var require_package = __commonJS({
       dependencies: {
         "@aws-crypto/sha256-browser": "5.2.0",
         "@aws-crypto/sha256-js": "5.2.0",
-        "@aws-sdk/core": "^3.974.12",
-        "@aws-sdk/credential-provider-node": "^3.972.43",
-        "@aws-sdk/signature-v4-multi-region": "^3.996.27",
-        "@aws-sdk/types": "^3.973.8",
-        "@smithy/core": "^3.24.2",
-        "@smithy/fetch-http-handler": "^5.4.2",
-        "@smithy/node-http-handler": "^4.7.2",
-        "@smithy/types": "^4.14.1",
+        "@aws-sdk/core": "^3.974.19",
+        "@aws-sdk/credential-provider-node": "^3.972.53",
+        "@aws-sdk/signature-v4-multi-region": "^3.996.33",
+        "@aws-sdk/types": "^3.973.12",
+        "@smithy/core": "^3.24.6",
+        "@smithy/fetch-http-handler": "^5.4.6",
+        "@smithy/node-http-handler": "^4.7.6",
+        "@smithy/types": "^4.14.3",
         tslib: "^2.6.2"
       },
       devDependencies: {
-        "@smithy/snapshot-testing": "^2.1.2",
+        "@smithy/snapshot-testing": "^2.1.7",
         "@tsconfig/node20": "20.1.8",
         "@types/node": "^20.14.8",
         concurrently: "7.0.0",
@@ -33686,7 +33721,7 @@ var require_package = __commonJS({
       ],
       author: {
         name: "AWS SDK for JavaScript Team",
-        url: "https://aws.amazon.com/javascript/"
+        url: "https://aws.amazon.com/sdk-for-javascript/"
       },
       license: "Apache-2.0",
       browser: {
@@ -33753,7 +33788,6 @@ var require_dist_cjs7 = __commonJS({
 var require_dist_cjs8 = __commonJS({
   "node_modules/@smithy/credential-provider-imds/dist-cjs/index.js"(exports2) {
     "use strict";
-    var node_url = require("node:url");
     var config = (init_config2(), __toCommonJS(config_exports));
     var node_http = require("node:http");
     var protocols2 = (init_protocols(), __toCommonJS(protocols_exports));
@@ -33838,14 +33872,8 @@ var require_dist_cjs8 = __commonJS({
       return buffer.toString();
     };
     var CMDS_IP = "169.254.170.2";
-    var GREENGRASS_HOSTS = {
-      localhost: true,
-      "127.0.0.1": true
-    };
-    var GREENGRASS_PROTOCOLS = {
-      "http:": true,
-      "https:": true
-    };
+    var GREENGRASS_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1"]);
+    var GREENGRASS_PROTOCOLS = /* @__PURE__ */ new Set(["http:", "https:"]);
     var getCmdsUri = async ({ logger: logger2 }) => {
       if (process.env[ENV_CMDS_RELATIVE_URI]) {
         return {
@@ -33854,21 +33882,28 @@ var require_dist_cjs8 = __commonJS({
         };
       }
       if (process.env[ENV_CMDS_FULL_URI]) {
-        const parsed = node_url.parse(process.env[ENV_CMDS_FULL_URI]);
-        if (!parsed.hostname || !(parsed.hostname in GREENGRASS_HOSTS)) {
+        let parsed;
+        try {
+          parsed = new URL(process.env[ENV_CMDS_FULL_URI]);
+        } catch {
+          throw new config.CredentialsProviderError(`${process.env[ENV_CMDS_FULL_URI]} is not a valid container metadata service URL`, { tryNextLink: false, logger: logger2 });
+        }
+        if (!parsed.hostname || !GREENGRASS_HOSTS.has(parsed.hostname)) {
           throw new config.CredentialsProviderError(`${parsed.hostname} is not a valid container metadata service hostname`, {
             tryNextLink: false,
             logger: logger2
           });
         }
-        if (!parsed.protocol || !(parsed.protocol in GREENGRASS_PROTOCOLS)) {
+        if (!parsed.protocol || !GREENGRASS_PROTOCOLS.has(parsed.protocol)) {
           throw new config.CredentialsProviderError(`${parsed.protocol} is not a valid container metadata service protocol`, {
             tryNextLink: false,
             logger: logger2
           });
         }
         return {
-          ...parsed,
+          protocol: parsed.protocol,
+          hostname: parsed.hostname,
+          path: parsed.pathname + parsed.search,
           port: parsed.port ? parseInt(parsed.port, 10) : void 0
         };
       }
@@ -34097,8 +34132,8 @@ For more information, please visit: ` + STATIC_STABILITY_DOC_URL);
 var require_dist_cjs9 = __commonJS({
   "node_modules/@smithy/node-http-handler/dist-cjs/index.js"(exports2) {
     "use strict";
-    var node_https = require("node:https");
     var protocols2 = (init_protocols(), __toCommonJS(protocols_exports));
+    var node_https = require("node:https");
     var node_stream = require("node:stream");
     var http22 = require("node:http2");
     function buildAbortError(abortSignal) {
@@ -34484,7 +34519,8 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
           socketAcquisitionWarningTimeout,
           throwOnRequestTimeout,
           httpAgentProvider: async () => {
-            const { Agent: Agent9, request } = await import("node:http");
+            const node_http = await import("node:http");
+            const { Agent: Agent9, request } = node_http.default ?? node_http;
             hRequest = request;
             hAgent = Agent9;
             if (httpAgent instanceof hAgent || typeof httpAgent?.destroy === "function") {
@@ -34729,6 +34765,7 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
         return this.connectOptions === void 0 ? http22.connect(url) : http22.connect(url, this.connectOptions);
       }
     };
+    var { constants: constants4 } = http22;
     var NodeHttp2Handler = class _NodeHttp2Handler {
       config;
       configProvider;
@@ -34818,8 +34855,8 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
           }
           const clientHttp2Stream = session.request({
             ...request.headers,
-            [http22.constants.HTTP2_HEADER_PATH]: path4,
-            [http22.constants.HTTP2_HEADER_METHOD]: method
+            [constants4.HTTP2_HEADER_PATH]: path4,
+            [constants4.HTTP2_HEADER_METHOD]: method
           });
           if (effectiveRequestTimeout) {
             clientHttp2Stream.setTimeout(effectiveRequestTimeout, () => {
@@ -35107,11 +35144,9 @@ Set AWS_CONTAINER_CREDENTIALS_FULL_URI or AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
       }
       const url = new URL(host);
       (0, checkUrl_1.checkUrl)(url, options.logger);
-      const requestHandler = node_http_handler_1.NodeHttpHandler.create({
-        requestTimeout: options.timeout ?? 1e3,
-        connectionTimeout: options.timeout ?? 1e3
-      });
-      return (0, retry_wrapper_1.retryWrapper)(async () => {
+      const requestHandler = node_http_handler_1.NodeHttpHandler.create({ connectionTimeout: options.timeout ?? 1e3 });
+      const requestTimeout = options.timeout ?? 1e3;
+      const provider = (0, retry_wrapper_1.retryWrapper)(async () => {
         const request = (0, requestHelpers_1.createGetRequest)(url);
         if (token) {
           request.headers.Authorization = token;
@@ -35119,12 +35154,19 @@ Set AWS_CONTAINER_CREDENTIALS_FULL_URI or AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
           request.headers.Authorization = (await promises_1.default.readFile(tokenFile)).toString();
         }
         try {
-          const result = await requestHandler.handle(request);
+          const result = await requestHandler.handle(request, { requestTimeout });
           return (0, requestHelpers_1.getCredentials)(result.response).then((creds) => (0, client_1.setCredentialFeature)(creds, "CREDENTIALS_HTTP", "z"));
         } catch (e5) {
           throw new config_1.CredentialsProviderError(String(e5), { logger: options.logger });
         }
       }, options.maxRetries ?? 3, options.timeout ?? 1e3);
+      return async () => {
+        try {
+          return await provider();
+        } finally {
+          requestHandler.destroy?.();
+        }
+      };
     };
     exports2.fromHttp = fromHttp;
   }
@@ -35221,20 +35263,20 @@ var init_package = __esm({
   "node_modules/@aws-sdk/nested-clients/package.json"() {
     package_default = {
       name: "@aws-sdk/nested-clients",
-      version: "3.997.10",
+      version: "3.997.18",
       description: "Nested clients for AWS SDK packages.",
       main: "./dist-cjs/index.js",
       module: "./dist-es/index.js",
       types: "./dist-types/index.d.ts",
       scripts: {
         build: "yarn lint && concurrently 'yarn:build:types' 'yarn:build:es' && yarn build:cjs",
-        "build:cjs": "node ../../scripts/compilation/inline nested-clients",
+        "build:cjs": "node ../../scripts/compilation/inline",
         "build:es": "tsc -p tsconfig.es.json",
         "build:include:deps": 'yarn g:turbo run build -F="$npm_package_name"',
         "build:types": "tsc -p tsconfig.types.json",
         "build:types:downlevel": "downlevel-dts dist-types dist-types/ts3.4",
         clean: "premove dist-cjs dist-es dist-types tsconfig.cjs.tsbuildinfo tsconfig.es.tsbuildinfo tsconfig.types.tsbuildinfo",
-        lint: "node ../../scripts/validation/submodules-linter.js --pkg nested-clients",
+        lint: "node ../../scripts/validation/submodules-linter.js",
         test: "yarn g:vitest run",
         "test:watch": "yarn g:vitest watch"
       },
@@ -35244,19 +35286,19 @@ var init_package = __esm({
       sideEffects: false,
       author: {
         name: "AWS SDK for JavaScript Team",
-        url: "https://aws.amazon.com/javascript/"
+        url: "https://aws.amazon.com/sdk-for-javascript/"
       },
       license: "Apache-2.0",
       dependencies: {
         "@aws-crypto/sha256-browser": "5.2.0",
         "@aws-crypto/sha256-js": "5.2.0",
-        "@aws-sdk/core": "^3.974.12",
-        "@aws-sdk/signature-v4-multi-region": "^3.996.27",
-        "@aws-sdk/types": "^3.973.8",
-        "@smithy/core": "^3.24.2",
-        "@smithy/fetch-http-handler": "^5.4.2",
-        "@smithy/node-http-handler": "^4.7.2",
-        "@smithy/types": "^4.14.1",
+        "@aws-sdk/core": "^3.974.19",
+        "@aws-sdk/signature-v4-multi-region": "^3.996.33",
+        "@aws-sdk/types": "^3.973.12",
+        "@smithy/core": "^3.24.6",
+        "@smithy/fetch-http-handler": "^5.4.6",
+        "@smithy/node-http-handler": "^4.7.6",
+        "@smithy/types": "^4.14.3",
         tslib: "^2.6.2"
       },
       devDependencies: {
@@ -40900,13 +40942,41 @@ var init_schemas_0 = __esm({
       [0, 0]
     ];
     n0_registry.registerError(AuthorizationPendingException$, AuthorizationPendingException);
-    ExpiredTokenException$ = [-3, n0, _ETE, { [_e]: _c, [_hE]: 400 }, [_e, _ed], [0, 0]];
+    ExpiredTokenException$ = [
+      -3,
+      n0,
+      _ETE,
+      { [_e]: _c, [_hE]: 400 },
+      [_e, _ed],
+      [0, 0]
+    ];
     n0_registry.registerError(ExpiredTokenException$, ExpiredTokenException);
-    InternalServerException$ = [-3, n0, _ISE, { [_e]: _se, [_hE]: 500 }, [_e, _ed], [0, 0]];
+    InternalServerException$ = [
+      -3,
+      n0,
+      _ISE,
+      { [_e]: _se, [_hE]: 500 },
+      [_e, _ed],
+      [0, 0]
+    ];
     n0_registry.registerError(InternalServerException$, InternalServerException);
-    InvalidClientException$ = [-3, n0, _ICE, { [_e]: _c, [_hE]: 401 }, [_e, _ed], [0, 0]];
+    InvalidClientException$ = [
+      -3,
+      n0,
+      _ICE,
+      { [_e]: _c, [_hE]: 401 },
+      [_e, _ed],
+      [0, 0]
+    ];
     n0_registry.registerError(InvalidClientException$, InvalidClientException);
-    InvalidGrantException$ = [-3, n0, _IGE, { [_e]: _c, [_hE]: 400 }, [_e, _ed], [0, 0]];
+    InvalidGrantException$ = [
+      -3,
+      n0,
+      _IGE,
+      { [_e]: _c, [_hE]: 400 },
+      [_e, _ed],
+      [0, 0]
+    ];
     n0_registry.registerError(InvalidGrantException$, InvalidGrantException);
     InvalidRequestException$ = [
       -3,
@@ -40917,9 +40987,23 @@ var init_schemas_0 = __esm({
       [0, 0, 0]
     ];
     n0_registry.registerError(InvalidRequestException$, InvalidRequestException);
-    InvalidScopeException$ = [-3, n0, _ISEn, { [_e]: _c, [_hE]: 400 }, [_e, _ed], [0, 0]];
+    InvalidScopeException$ = [
+      -3,
+      n0,
+      _ISEn,
+      { [_e]: _c, [_hE]: 400 },
+      [_e, _ed],
+      [0, 0]
+    ];
     n0_registry.registerError(InvalidScopeException$, InvalidScopeException);
-    SlowDownException$ = [-3, n0, _SDE, { [_e]: _c, [_hE]: 400 }, [_e, _ed], [0, 0]];
+    SlowDownException$ = [
+      -3,
+      n0,
+      _SDE,
+      { [_e]: _c, [_hE]: 400 },
+      [_e, _ed],
+      [0, 0]
+    ];
     n0_registry.registerError(SlowDownException$, SlowDownException);
     UnauthorizedClientException$ = [
       -3,
@@ -40939,7 +41023,10 @@ var init_schemas_0 = __esm({
       [0, 0]
     ];
     n0_registry.registerError(UnsupportedGrantTypeException$, UnsupportedGrantTypeException);
-    errorTypeRegistries = [_s_registry, n0_registry];
+    errorTypeRegistries = [
+      _s_registry,
+      n0_registry
+    ];
     AccessToken = [0, n0, _AT, 8, 0];
     ClientSecret = [0, n0, _CS, 8, 0];
     CodeVerifier = [0, n0, _CV, 8, 0];
@@ -41746,15 +41833,46 @@ var init_schemas_02 = __esm({
     SSOServiceException$ = [-3, _s2, "SSOServiceException", 0, [], []];
     _s_registry2.registerError(SSOServiceException$, SSOServiceException);
     n0_registry2 = TypeRegistry.for(n02);
-    InvalidRequestException$2 = [-3, n02, _IRE2, { [_e2]: _c2, [_hE2]: 400 }, [_m], [0]];
+    InvalidRequestException$2 = [
+      -3,
+      n02,
+      _IRE2,
+      { [_e2]: _c2, [_hE2]: 400 },
+      [_m],
+      [0]
+    ];
     n0_registry2.registerError(InvalidRequestException$2, InvalidRequestException2);
-    ResourceNotFoundException$ = [-3, n02, _RNFE, { [_e2]: _c2, [_hE2]: 404 }, [_m], [0]];
+    ResourceNotFoundException$ = [
+      -3,
+      n02,
+      _RNFE,
+      { [_e2]: _c2, [_hE2]: 404 },
+      [_m],
+      [0]
+    ];
     n0_registry2.registerError(ResourceNotFoundException$, ResourceNotFoundException);
-    TooManyRequestsException$ = [-3, n02, _TMRE, { [_e2]: _c2, [_hE2]: 429 }, [_m], [0]];
+    TooManyRequestsException$ = [
+      -3,
+      n02,
+      _TMRE,
+      { [_e2]: _c2, [_hE2]: 429 },
+      [_m],
+      [0]
+    ];
     n0_registry2.registerError(TooManyRequestsException$, TooManyRequestsException);
-    UnauthorizedException$ = [-3, n02, _UE, { [_e2]: _c2, [_hE2]: 401 }, [_m], [0]];
+    UnauthorizedException$ = [
+      -3,
+      n02,
+      _UE,
+      { [_e2]: _c2, [_hE2]: 401 },
+      [_m],
+      [0]
+    ];
     n0_registry2.registerError(UnauthorizedException$, UnauthorizedException);
-    errorTypeRegistries2 = [_s_registry2, n0_registry2];
+    errorTypeRegistries2 = [
+      _s_registry2,
+      n0_registry2
+    ];
     AccessTokenType = [0, n02, _ATT, 8, 0];
     SecretAccessKeyType = [0, n02, _SAKT, 8, 0];
     SessionTokenType = [0, n02, _STT, 8, 0];
@@ -41764,11 +41882,7 @@ var init_schemas_02 = __esm({
       _GRCR,
       0,
       [_rN, _aI, _aT2],
-      [
-        [0, { [_hQ]: _rn }],
-        [0, { [_hQ]: _ai }],
-        [() => AccessTokenType, { [_hH]: _xasbt }]
-      ],
+      [[0, { [_hQ]: _rn }], [0, { [_hQ]: _ai }], [() => AccessTokenType, { [_hH]: _xasbt }]],
       3
     ];
     GetRoleCredentialsResponse$ = [
@@ -42370,7 +42484,7 @@ var init_bdd3 = __esm({
     g3 = "stringEquals";
     h3 = { [m]: "Endpoint" };
     i3 = { [m]: d3 };
-    j3 = { fn: f3, argv: [i3, "name"] };
+    j3 = { "fn": f3, "argv": [i3, "name"] };
     k3 = {};
     l = [{ [m]: "Region" }];
     _data3 = {
@@ -42605,15 +42719,50 @@ var init_schemas_03 = __esm({
     SigninServiceException$ = [-3, _s3, "SigninServiceException", 0, [], []];
     _s_registry3.registerError(SigninServiceException$, SigninServiceException);
     n0_registry3 = TypeRegistry.for(n03);
-    AccessDeniedException$2 = [-3, n03, _ADE2, { [_e3]: _c3 }, [_e3, _m2], [0, 0], 2];
+    AccessDeniedException$2 = [
+      -3,
+      n03,
+      _ADE2,
+      { [_e3]: _c3 },
+      [_e3, _m2],
+      [0, 0],
+      2
+    ];
     n0_registry3.registerError(AccessDeniedException$2, AccessDeniedException2);
-    InternalServerException$2 = [-3, n03, _ISE2, { [_e3]: _se2, [_hE3]: 500 }, [_e3, _m2], [0, 0], 2];
+    InternalServerException$2 = [
+      -3,
+      n03,
+      _ISE2,
+      { [_e3]: _se2, [_hE3]: 500 },
+      [_e3, _m2],
+      [0, 0],
+      2
+    ];
     n0_registry3.registerError(InternalServerException$2, InternalServerException2);
-    TooManyRequestsError$ = [-3, n03, _TMRE2, { [_e3]: _c3, [_hE3]: 429 }, [_e3, _m2], [0, 0], 2];
+    TooManyRequestsError$ = [
+      -3,
+      n03,
+      _TMRE2,
+      { [_e3]: _c3, [_hE3]: 429 },
+      [_e3, _m2],
+      [0, 0],
+      2
+    ];
     n0_registry3.registerError(TooManyRequestsError$, TooManyRequestsError);
-    ValidationException$ = [-3, n03, _VE, { [_e3]: _c3, [_hE3]: 400 }, [_e3, _m2], [0, 0], 2];
+    ValidationException$ = [
+      -3,
+      n03,
+      _VE,
+      { [_e3]: _c3, [_hE3]: 400 },
+      [_e3, _m2],
+      [0, 0],
+      2
+    ];
     n0_registry3.registerError(ValidationException$, ValidationException);
-    errorTypeRegistries3 = [_s_registry3, n0_registry3];
+    errorTypeRegistries3 = [
+      _s_registry3,
+      n0_registry3
+    ];
     RefreshToken2 = [0, n03, _RT2, 8, 0];
     AccessToken$ = [
       3,
@@ -42621,11 +42770,7 @@ var init_schemas_03 = __esm({
       _AT2,
       8,
       [_aKI2, _sAK2, _sT2],
-      [
-        [0, { [_jN]: _aKI2 }],
-        [0, { [_jN]: _sAK2 }],
-        [0, { [_jN]: _sT2 }]
-      ],
+      [[0, { [_jN]: _aKI2 }], [0, { [_jN]: _sAK2 }], [0, { [_jN]: _sT2 }]],
       3
     ];
     CreateOAuth2TokenRequest$ = [
@@ -42643,14 +42788,7 @@ var init_schemas_03 = __esm({
       _COATRB,
       0,
       [_cI2, _gT2, _co2, _rU2, _cV2, _rT2],
-      [
-        [0, { [_jN]: _cI2 }],
-        [0, { [_jN]: _gT2 }],
-        0,
-        [0, { [_jN]: _rU2 }],
-        [0, { [_jN]: _cV2 }],
-        [() => RefreshToken2, { [_jN]: _rT2 }]
-      ],
+      [[0, { [_jN]: _cI2 }], [0, { [_jN]: _gT2 }], 0, [0, { [_jN]: _rU2 }], [0, { [_jN]: _cV2 }], [() => RefreshToken2, { [_jN]: _rT2 }]],
       2
     ];
     CreateOAuth2TokenResponse$ = [
@@ -42668,13 +42806,7 @@ var init_schemas_03 = __esm({
       _COATRBr,
       0,
       [_aT3, _tT2, _eI2, _rT2, _iT2],
-      [
-        [() => AccessToken$, { [_jN]: _aT3 }],
-        [0, { [_jN]: _tT2 }],
-        [1, { [_jN]: _eI2 }],
-        [() => RefreshToken2, { [_jN]: _rT2 }],
-        [0, { [_jN]: _iT2 }]
-      ],
+      [[() => AccessToken$, { [_jN]: _aT3 }], [0, { [_jN]: _tT2 }], [1, { [_jN]: _eI2 }], [() => RefreshToken2, { [_jN]: _rT2 }], [0, { [_jN]: _iT2 }]],
       4
     ];
     CreateOAuth2Token$ = [
@@ -43866,10 +43998,21 @@ var init_schemas_04 = __esm({
       [0]
     ];
     n0_registry4.registerError(RegionDisabledException$, RegionDisabledException);
-    errorTypeRegistries4 = [_s_registry4, n0_registry4];
+    errorTypeRegistries4 = [
+      _s_registry4,
+      n0_registry4
+    ];
     accessKeySecretType = [0, n04, _aKST, 8, 0];
     clientTokenType = [0, n04, _cTT, 8, 0];
-    AssumedRoleUser$ = [3, n04, _ARU, 0, [_ARI, _A], [0, 0], 2];
+    AssumedRoleUser$ = [
+      3,
+      n04,
+      _ARU,
+      0,
+      [_ARI, _A],
+      [0, 0],
+      2
+    ];
     AssumeRoleRequest$ = [
       3,
       n04,
@@ -43913,14 +44056,61 @@ var init_schemas_04 = __esm({
       [0, [() => accessKeySecretType, 0], 0, 4],
       4
     ];
-    PolicyDescriptorType$ = [3, n04, _PDT, 0, [_a], [0]];
-    ProvidedContext$ = [3, n04, _PCr, 0, [_PAr, _CA], [0, 0]];
-    Tag$ = [3, n04, _Ta, 0, [_K, _V], [0, 0], 2];
-    policyDescriptorListType = [1, n04, _pDLT, 0, () => PolicyDescriptorType$];
-    ProvidedContextsListType = [1, n04, _PCLT, 0, () => ProvidedContext$];
+    PolicyDescriptorType$ = [
+      3,
+      n04,
+      _PDT,
+      0,
+      [_a],
+      [0]
+    ];
+    ProvidedContext$ = [
+      3,
+      n04,
+      _PCr,
+      0,
+      [_PAr, _CA],
+      [0, 0]
+    ];
+    Tag$ = [
+      3,
+      n04,
+      _Ta,
+      0,
+      [_K, _V],
+      [0, 0],
+      2
+    ];
+    policyDescriptorListType = [
+      1,
+      n04,
+      _pDLT,
+      0,
+      () => PolicyDescriptorType$
+    ];
+    ProvidedContextsListType = [
+      1,
+      n04,
+      _PCLT,
+      0,
+      () => ProvidedContext$
+    ];
     tagKeyListType = 64 | 0;
-    tagListType = [1, n04, _tLT, 0, () => Tag$];
-    AssumeRole$ = [9, n04, _AR, 0, () => AssumeRoleRequest$, () => AssumeRoleResponse$];
+    tagListType = [
+      1,
+      n04,
+      _tLT,
+      0,
+      () => Tag$
+    ];
+    AssumeRole$ = [
+      9,
+      n04,
+      _AR,
+      0,
+      () => AssumeRoleRequest$,
+      () => AssumeRoleResponse$
+    ];
     AssumeRoleWithWebIdentity$ = [
       9,
       n04,
@@ -44813,9 +45003,18 @@ var require_dist_cjs18 = __commonJS({
       let activeLock;
       let passiveLock;
       let credentials;
+      let forceRefreshLock;
       const provider = async (options) => {
         if (options?.forceRefresh) {
-          return await chain2(options);
+          if (!forceRefreshLock) {
+            forceRefreshLock = chain2(options).then((c5) => {
+              credentials = c5;
+            }).finally(() => {
+              forceRefreshLock = void 0;
+            });
+          }
+          await forceRefreshLock;
+          return credentials;
         }
         if (credentials?.expiration) {
           if (credentials?.expiration?.getTime() < Date.now()) {
@@ -44986,7 +45185,7 @@ var require_errors2 = __commonJS({
       }
     };
     exports2.MalformedPolicyDocumentException = MalformedPolicyDocumentException2;
-    var PackedPolicyTooLargeException2 = class _PackedPolicyTooLargeException extends STSServiceException_1.STSServiceException {
+    var PackedPolicyTooLargeException3 = class _PackedPolicyTooLargeException extends STSServiceException_1.STSServiceException {
       name = "PackedPolicyTooLargeException";
       $fault = "client";
       constructor(opts) {
@@ -44998,7 +45197,7 @@ var require_errors2 = __commonJS({
         Object.setPrototypeOf(this, _PackedPolicyTooLargeException.prototype);
       }
     };
-    exports2.PackedPolicyTooLargeException = PackedPolicyTooLargeException2;
+    exports2.PackedPolicyTooLargeException = PackedPolicyTooLargeException3;
     var RegionDisabledException2 = class _RegionDisabledException extends STSServiceException_1.STSServiceException {
       name = "RegionDisabledException";
       $fault = "client";
@@ -47064,6 +47263,40 @@ var require_src = __commonJS({
   }
 });
 
+// node_modules/proxy-agent-negotiate/dist/index.js
+function createNegotiateAuth() {
+  return async ({ response, scheme }) => {
+    if (scheme.toLowerCase() !== "negotiate") {
+      throw new Error(`Expected Negotiate scheme but got "${scheme}"`);
+    }
+    let kerberos;
+    try {
+      kerberos = await import("kerberos");
+    } catch {
+      throw new Error('The "kerberos" package is required for Negotiate proxy authentication. Install it with: npm install kerberos');
+    }
+    const proxyAuthenticate = response.headers["proxy-authenticate"] || "";
+    const challengeHeader = Array.isArray(proxyAuthenticate) ? proxyAuthenticate[0] : proxyAuthenticate;
+    const serverToken = typeof challengeHeader === "string" && challengeHeader.includes(" ") ? challengeHeader.split(" ").slice(1).join(" ") : void 0;
+    const client = await kerberos.initializeClient("HTTP@proxy", {
+      mechOID: kerberos.GSS_MECH_OID_SPNEGO
+    });
+    const token = await client.step(serverToken || "");
+    if (!token) {
+      throw new Error("Kerberos client.step() returned no token");
+    }
+    return {
+      headers: {
+        "Proxy-Authorization": `Negotiate ${token}`
+      }
+    };
+  };
+}
+var init_dist2 = __esm({
+  "node_modules/proxy-agent-negotiate/dist/index.js"() {
+  }
+});
+
 // node_modules/proxy-agent/node_modules/http-proxy-agent/dist/index.js
 var dist_exports = {};
 __export(dist_exports, {
@@ -47080,7 +47313,7 @@ function omit(obj, ...keys) {
   return ret;
 }
 var net2, tls, import_debug5, import_events, import_url, debug2, HttpProxyAgent;
-var init_dist2 = __esm({
+var init_dist3 = __esm({
   "node_modules/proxy-agent/node_modules/http-proxy-agent/dist/index.js"() {
     net2 = __toESM(require("net"), 1);
     tls = __toESM(require("tls"), 1);
@@ -47088,6 +47321,7 @@ var init_dist2 = __esm({
     import_events = require("events");
     init_dist();
     import_url = require("url");
+    init_dist2();
     debug2 = (0, import_debug5.default)("http-proxy-agent");
     HttpProxyAgent = class extends Agent4 {
       constructor(proxy, opts) {
@@ -47095,10 +47329,15 @@ var init_dist2 = __esm({
         this.proxy = typeof proxy === "string" ? new import_url.URL(proxy) : proxy;
         this.proxyHeaders = opts?.headers ?? {};
         debug2("Creating new HttpProxyAgent instance: %o", this.proxy.href);
+        if (opts?.negotiate) {
+          this.onProxyAuth = createNegotiateAuth();
+        } else if (opts?.onProxyAuth) {
+          this.onProxyAuth = opts.onProxyAuth;
+        }
         const host = (this.proxy.hostname || this.proxy.host).replace(/^\[|\]$/g, "");
         const port = this.proxy.port ? parseInt(this.proxy.port, 10) : this.proxy.protocol === "https:" ? 443 : 80;
         this.connectOpts = {
-          ...opts ? omit(opts, "headers") : null,
+          ...opts ? omit(opts, "headers", "onProxyAuth", "negotiate") : null,
           host,
           port
         };
@@ -47158,6 +47397,10 @@ var init_dist2 = __esm({
           socket = net2.connect(this.connectOpts);
         }
         await (0, import_events.once)(socket, "connect");
+        const connect13 = { socket };
+        req.emit("proxyConnect", connect13);
+        this.emit("proxyConnect", connect13, req);
+        req.emit("proxy", { proxy: this.proxy.href, socket });
         return socket;
       }
     };
@@ -47261,7 +47504,9 @@ __export(dist_exports2, {
   HttpsProxyAgent: () => HttpsProxyAgent
 });
 function resume(socket) {
-  socket.resume();
+  setImmediate(() => {
+    socket.resume();
+  });
 }
 function omit2(obj, ...keys) {
   const ret = {};
@@ -47274,7 +47519,7 @@ function omit2(obj, ...keys) {
   return ret;
 }
 var net3, tls2, import_assert, import_debug7, import_url2, debug4, setServernameFromNonIpHost, HttpsProxyAgent;
-var init_dist3 = __esm({
+var init_dist4 = __esm({
   "node_modules/proxy-agent/node_modules/https-proxy-agent/dist/index.js"() {
     net3 = __toESM(require("net"), 1);
     tls2 = __toESM(require("tls"), 1);
@@ -47283,6 +47528,7 @@ var init_dist3 = __esm({
     init_dist();
     import_url2 = require("url");
     init_parse_proxy_response();
+    init_dist2();
     debug4 = (0, import_debug7.default)("https-proxy-agent");
     setServernameFromNonIpHost = (options) => {
       if (options.servername === void 0 && options.host && !net3.isIP(options.host)) {
@@ -47300,12 +47546,17 @@ var init_dist3 = __esm({
         this.proxy = typeof proxy === "string" ? new import_url2.URL(proxy) : proxy;
         this.proxyHeaders = opts?.headers ?? {};
         debug4("Creating new HttpsProxyAgent instance: %o", this.proxy.href);
+        if (opts?.negotiate) {
+          this.onProxyAuth = createNegotiateAuth();
+        } else if (opts?.onProxyAuth) {
+          this.onProxyAuth = opts.onProxyAuth;
+        }
         const host = (this.proxy.hostname || this.proxy.host).replace(/^\[|\]$/g, "");
         const port = this.proxy.port ? parseInt(this.proxy.port, 10) : this.proxy.protocol === "https:" ? 443 : 80;
         this.connectOpts = {
           // Attempt to negotiate http/1.1 for proxy servers that support http/2
           ALPNProtocols: ["http/1.1"],
-          ...opts ? omit2(opts, "headers") : null,
+          ...opts ? omit2(opts, "headers", "onProxyAuth", "negotiate") : null,
           host,
           port
         };
@@ -47349,6 +47600,74 @@ var init_dist3 = __esm({
         const { connect: connect13, buffered } = await proxyResponsePromise;
         req.emit("proxyConnect", connect13);
         this.emit("proxyConnect", connect13, req);
+        req.emit("proxy", { proxy: this.proxy.href, socket });
+        if (connect13.statusCode === 200) {
+          req.once("socket", resume);
+          if (opts.secureEndpoint) {
+            debug4("Upgrading socket connection to TLS");
+            return tls2.connect({
+              ...omit2(setServernameFromNonIpHost(opts), "host", "path", "port"),
+              socket
+            });
+          }
+          return socket;
+        }
+        if (connect13.statusCode === 407 && this.onProxyAuth) {
+          debug4("Got 407 response, invoking onProxyAuth callback");
+          socket.destroy();
+          const proxyAuthenticate = connect13.headers["proxy-authenticate"] || "";
+          const scheme = Array.isArray(proxyAuthenticate) ? proxyAuthenticate[0].split(/\s/)[0] : proxyAuthenticate.split(/\s/)[0];
+          const authResponse = await this.onProxyAuth({
+            response: connect13,
+            scheme
+          });
+          return this._connectWithAuth(req, opts, authResponse.headers);
+        }
+        socket.destroy();
+        const fakeSocket = new net3.Socket({ writable: false });
+        fakeSocket.readable = true;
+        req.once("socket", (s) => {
+          debug4("Replaying proxy buffer for failed request");
+          (0, import_assert.default)(s.listenerCount("data") > 0);
+          s.push(buffered);
+          s.push(null);
+        });
+        return fakeSocket;
+      }
+      /**
+       * Retry a CONNECT request with additional auth headers.
+       */
+      async _connectWithAuth(req, opts, authHeaders) {
+        const { proxy } = this;
+        let socket;
+        if (proxy.protocol === "https:") {
+          socket = tls2.connect(setServernameFromNonIpHost(this.connectOpts));
+        } else {
+          socket = net3.connect(this.connectOpts);
+        }
+        const headers = typeof this.proxyHeaders === "function" ? this.proxyHeaders() : { ...this.proxyHeaders };
+        const host = net3.isIPv6(opts.host) ? `[${opts.host}]` : opts.host;
+        let payload2 = `CONNECT ${host}:${opts.port} HTTP/1.1\r
+`;
+        if (proxy.username || proxy.password) {
+          const auth = `${decodeURIComponent(proxy.username)}:${decodeURIComponent(proxy.password)}`;
+          headers["Proxy-Authorization"] = `Basic ${Buffer.from(auth).toString("base64")}`;
+        }
+        Object.assign(headers, authHeaders);
+        headers.Host = `${host}:${opts.port}`;
+        if (!headers["Proxy-Connection"]) {
+          headers["Proxy-Connection"] = this.keepAlive ? "Keep-Alive" : "close";
+        }
+        for (const name of Object.keys(headers)) {
+          payload2 += `${name}: ${headers[name]}\r
+`;
+        }
+        const proxyResponsePromise = parseProxyResponse(socket);
+        socket.write(`${payload2}\r
+`);
+        const { connect: connect13 } = await proxyResponsePromise;
+        req.emit("proxyConnect", connect13);
+        this.emit("proxyConnect", connect13, req);
         if (connect13.statusCode === 200) {
           req.once("socket", resume);
           if (opts.secureEndpoint) {
@@ -47361,15 +47680,7 @@ var init_dist3 = __esm({
           return socket;
         }
         socket.destroy();
-        const fakeSocket = new net3.Socket({ writable: false });
-        fakeSocket.readable = true;
-        req.once("socket", (s) => {
-          debug4("Replaying proxy buffer for failed request");
-          (0, import_assert.default)(s.listenerCount("data") > 0);
-          s.push(buffered);
-          s.push(null);
-        });
-        return fakeSocket;
+        throw new Error(`Proxy authentication failed with status ${connect13.statusCode} after retry`);
       }
     };
     HttpsProxyAgent.protocols = ["http", "https"];
@@ -51583,7 +51894,7 @@ function omit3(obj, ...keys) {
   return ret;
 }
 var import_socks, import_debug8, dns, net4, tls3, import_url3, debug5, setServernameFromNonIpHost2, SocksProxyAgent;
-var init_dist4 = __esm({
+var init_dist5 = __esm({
   "node_modules/proxy-agent/node_modules/socks-proxy-agent/dist/index.js"() {
     import_socks = __toESM(require_build(), 1);
     init_dist();
@@ -51609,6 +51920,7 @@ var init_dist4 = __esm({
         const { proxy, lookup: lookup4 } = parseSocksURL(url);
         this.shouldLookup = lookup4;
         this.proxy = proxy;
+        this.proxyUrl = url.href;
         this.timeout = opts?.timeout ?? null;
         this.socketOptions = opts?.socketOptions ?? null;
       }
@@ -51655,6 +51967,7 @@ var init_dist4 = __esm({
         debug5("Creating socks proxy connection: %o", socksOpts);
         const { socket } = await import_socks.SocksClient.createConnection(socksOpts);
         debug5("Successfully created socks proxy connection");
+        req.emit("proxy", { proxy: this.proxyUrl, socket });
         if (timeout !== null) {
           socket.setTimeout(timeout);
           socket.on("timeout", () => cleanup());
@@ -51701,7 +52014,7 @@ var init_helpers2 = __esm({
 
 // node_modules/pac-proxy-agent/node_modules/agent-base/dist/index.js
 var net5, http3, import_https2, INTERNAL2, Agent6;
-var init_dist5 = __esm({
+var init_dist6 = __esm({
   "node_modules/pac-proxy-agent/node_modules/agent-base/dist/index.js"() {
     net5 = __toESM(require("net"), 1);
     http3 = __toESM(require("http"), 1);
@@ -54267,7 +54580,7 @@ async function getUri(uri, opts) {
   return getter(url, opts);
 }
 var import_debug13, debug10, protocols, VALID_PROTOCOLS;
-var init_dist6 = __esm({
+var init_dist7 = __esm({
   "node_modules/get-uri/dist/index.js"() {
     import_debug13 = __toESM(require_src(), 1);
     init_data();
@@ -68715,7 +69028,7 @@ var init_compile = __esm({
 });
 
 // node_modules/degenerator/dist/index.js
-var init_dist7 = __esm({
+var init_dist8 = __esm({
   "node_modules/degenerator/dist/index.js"() {
     init_degenerator();
     init_compile();
@@ -69513,9 +69826,9 @@ function isAsyncFunction(v) {
   return Boolean(v.async);
 }
 var sandbox;
-var init_dist8 = __esm({
+var init_dist9 = __esm({
   "node_modules/pac-resolver/dist/index.js"() {
-    init_dist7();
+    init_dist8();
     init_dateRange();
     init_dnsDomainIs();
     init_dnsDomainLevels();
@@ -69903,7 +70216,7 @@ var init_version = __esm({
 
 // node_modules/quickjs-wasi/dist/index.js
 var import_meta, __addDisposableResource2, __disposeResources2, EvalFlags, CompileFlags, Intrinsics, SNAPSHOT_MAGIC, SNAPSHOT_VERSION, SNAPSHOT_HEADER_SIZE, QuickJS, JSException, JSValueHandle;
-var init_dist9 = __esm({
+var init_dist10 = __esm({
   "node_modules/quickjs-wasi/dist/index.js"() {
     init_wasi_shim();
     init_extensions2();
@@ -71782,10 +72095,10 @@ function omit4(obj, ...keys) {
   return ret;
 }
 var import_socks2, import_debug14, dns2, net7, tls4, import_url5, debug11, setServernameFromNonIpHost3, SocksProxyAgent2;
-var init_dist10 = __esm({
+var init_dist11 = __esm({
   "node_modules/pac-proxy-agent/node_modules/socks-proxy-agent/dist/index.js"() {
     import_socks2 = __toESM(require_build(), 1);
-    init_dist5();
+    init_dist6();
     import_debug14 = __toESM(require_src(), 1);
     dns2 = __toESM(require("dns"), 1);
     net7 = __toESM(require("net"), 1);
@@ -71808,6 +72121,7 @@ var init_dist10 = __esm({
         const { proxy, lookup: lookup4 } = parseSocksURL2(url);
         this.shouldLookup = lookup4;
         this.proxy = proxy;
+        this.proxyUrl = url.href;
         this.timeout = opts?.timeout ?? null;
         this.socketOptions = opts?.socketOptions ?? null;
       }
@@ -71854,6 +72168,7 @@ var init_dist10 = __esm({
         debug11("Creating socks proxy connection: %o", socksOpts);
         const { socket } = await import_socks2.SocksClient.createConnection(socksOpts);
         debug11("Successfully created socks proxy connection");
+        req.emit("proxy", { proxy: this.proxyUrl, socket });
         if (timeout !== null) {
           socket.setTimeout(timeout);
           socket.on("timeout", () => cleanup());
@@ -71979,7 +72294,9 @@ __export(dist_exports5, {
   HttpsProxyAgent: () => HttpsProxyAgent2
 });
 function resume2(socket) {
-  socket.resume();
+  setImmediate(() => {
+    socket.resume();
+  });
 }
 function omit5(obj, ...keys) {
   const ret = {};
@@ -71992,15 +72309,16 @@ function omit5(obj, ...keys) {
   return ret;
 }
 var net8, tls5, import_assert2, import_debug16, import_url6, debug13, setServernameFromNonIpHost4, HttpsProxyAgent2;
-var init_dist11 = __esm({
+var init_dist12 = __esm({
   "node_modules/pac-proxy-agent/node_modules/https-proxy-agent/dist/index.js"() {
     net8 = __toESM(require("net"), 1);
     tls5 = __toESM(require("tls"), 1);
     import_assert2 = __toESM(require("assert"), 1);
     import_debug16 = __toESM(require_src(), 1);
-    init_dist5();
+    init_dist6();
     import_url6 = require("url");
     init_parse_proxy_response2();
+    init_dist2();
     debug13 = (0, import_debug16.default)("https-proxy-agent");
     setServernameFromNonIpHost4 = (options) => {
       if (options.servername === void 0 && options.host && !net8.isIP(options.host)) {
@@ -72018,12 +72336,17 @@ var init_dist11 = __esm({
         this.proxy = typeof proxy === "string" ? new import_url6.URL(proxy) : proxy;
         this.proxyHeaders = opts?.headers ?? {};
         debug13("Creating new HttpsProxyAgent instance: %o", this.proxy.href);
+        if (opts?.negotiate) {
+          this.onProxyAuth = createNegotiateAuth();
+        } else if (opts?.onProxyAuth) {
+          this.onProxyAuth = opts.onProxyAuth;
+        }
         const host = (this.proxy.hostname || this.proxy.host).replace(/^\[|\]$/g, "");
         const port = this.proxy.port ? parseInt(this.proxy.port, 10) : this.proxy.protocol === "https:" ? 443 : 80;
         this.connectOpts = {
           // Attempt to negotiate http/1.1 for proxy servers that support http/2
           ALPNProtocols: ["http/1.1"],
-          ...opts ? omit5(opts, "headers") : null,
+          ...opts ? omit5(opts, "headers", "onProxyAuth", "negotiate") : null,
           host,
           port
         };
@@ -72067,6 +72390,74 @@ var init_dist11 = __esm({
         const { connect: connect13, buffered } = await proxyResponsePromise;
         req.emit("proxyConnect", connect13);
         this.emit("proxyConnect", connect13, req);
+        req.emit("proxy", { proxy: this.proxy.href, socket });
+        if (connect13.statusCode === 200) {
+          req.once("socket", resume2);
+          if (opts.secureEndpoint) {
+            debug13("Upgrading socket connection to TLS");
+            return tls5.connect({
+              ...omit5(setServernameFromNonIpHost4(opts), "host", "path", "port"),
+              socket
+            });
+          }
+          return socket;
+        }
+        if (connect13.statusCode === 407 && this.onProxyAuth) {
+          debug13("Got 407 response, invoking onProxyAuth callback");
+          socket.destroy();
+          const proxyAuthenticate = connect13.headers["proxy-authenticate"] || "";
+          const scheme = Array.isArray(proxyAuthenticate) ? proxyAuthenticate[0].split(/\s/)[0] : proxyAuthenticate.split(/\s/)[0];
+          const authResponse = await this.onProxyAuth({
+            response: connect13,
+            scheme
+          });
+          return this._connectWithAuth(req, opts, authResponse.headers);
+        }
+        socket.destroy();
+        const fakeSocket = new net8.Socket({ writable: false });
+        fakeSocket.readable = true;
+        req.once("socket", (s) => {
+          debug13("Replaying proxy buffer for failed request");
+          (0, import_assert2.default)(s.listenerCount("data") > 0);
+          s.push(buffered);
+          s.push(null);
+        });
+        return fakeSocket;
+      }
+      /**
+       * Retry a CONNECT request with additional auth headers.
+       */
+      async _connectWithAuth(req, opts, authHeaders) {
+        const { proxy } = this;
+        let socket;
+        if (proxy.protocol === "https:") {
+          socket = tls5.connect(setServernameFromNonIpHost4(this.connectOpts));
+        } else {
+          socket = net8.connect(this.connectOpts);
+        }
+        const headers = typeof this.proxyHeaders === "function" ? this.proxyHeaders() : { ...this.proxyHeaders };
+        const host = net8.isIPv6(opts.host) ? `[${opts.host}]` : opts.host;
+        let payload2 = `CONNECT ${host}:${opts.port} HTTP/1.1\r
+`;
+        if (proxy.username || proxy.password) {
+          const auth = `${decodeURIComponent(proxy.username)}:${decodeURIComponent(proxy.password)}`;
+          headers["Proxy-Authorization"] = `Basic ${Buffer.from(auth).toString("base64")}`;
+        }
+        Object.assign(headers, authHeaders);
+        headers.Host = `${host}:${opts.port}`;
+        if (!headers["Proxy-Connection"]) {
+          headers["Proxy-Connection"] = this.keepAlive ? "Keep-Alive" : "close";
+        }
+        for (const name of Object.keys(headers)) {
+          payload2 += `${name}: ${headers[name]}\r
+`;
+        }
+        const proxyResponsePromise = parseProxyResponse2(socket);
+        socket.write(`${payload2}\r
+`);
+        const { connect: connect13 } = await proxyResponsePromise;
+        req.emit("proxyConnect", connect13);
+        this.emit("proxyConnect", connect13, req);
         if (connect13.statusCode === 200) {
           req.once("socket", resume2);
           if (opts.secureEndpoint) {
@@ -72079,15 +72470,7 @@ var init_dist11 = __esm({
           return socket;
         }
         socket.destroy();
-        const fakeSocket = new net8.Socket({ writable: false });
-        fakeSocket.readable = true;
-        req.once("socket", (s) => {
-          debug13("Replaying proxy buffer for failed request");
-          (0, import_assert2.default)(s.listenerCount("data") > 0);
-          s.push(buffered);
-          s.push(null);
-        });
-        return fakeSocket;
+        throw new Error(`Proxy authentication failed with status ${connect13.statusCode} after retry`);
       }
     };
     HttpsProxyAgent2.protocols = ["http", "https"];
@@ -72110,14 +72493,15 @@ function omit6(obj, ...keys) {
   return ret;
 }
 var net9, tls6, import_debug17, import_events3, import_url7, debug14, HttpProxyAgent2;
-var init_dist12 = __esm({
+var init_dist13 = __esm({
   "node_modules/pac-proxy-agent/node_modules/http-proxy-agent/dist/index.js"() {
     net9 = __toESM(require("net"), 1);
     tls6 = __toESM(require("tls"), 1);
     import_debug17 = __toESM(require_src(), 1);
     import_events3 = require("events");
-    init_dist5();
+    init_dist6();
     import_url7 = require("url");
+    init_dist2();
     debug14 = (0, import_debug17.default)("http-proxy-agent");
     HttpProxyAgent2 = class extends Agent6 {
       constructor(proxy, opts) {
@@ -72125,10 +72509,15 @@ var init_dist12 = __esm({
         this.proxy = typeof proxy === "string" ? new import_url7.URL(proxy) : proxy;
         this.proxyHeaders = opts?.headers ?? {};
         debug14("Creating new HttpProxyAgent instance: %o", this.proxy.href);
+        if (opts?.negotiate) {
+          this.onProxyAuth = createNegotiateAuth();
+        } else if (opts?.onProxyAuth) {
+          this.onProxyAuth = opts.onProxyAuth;
+        }
         const host = (this.proxy.hostname || this.proxy.host).replace(/^\[|\]$/g, "");
         const port = this.proxy.port ? parseInt(this.proxy.port, 10) : this.proxy.protocol === "https:" ? 443 : 80;
         this.connectOpts = {
-          ...opts ? omit6(opts, "headers") : null,
+          ...opts ? omit6(opts, "headers", "onProxyAuth", "negotiate") : null,
           host,
           port
         };
@@ -72188,6 +72577,10 @@ var init_dist12 = __esm({
           socket = net9.connect(this.connectOpts);
         }
         await (0, import_events3.once)(socket, "connect");
+        const connect13 = { socket };
+        req.emit("proxyConnect", connect13);
+        this.emit("proxyConnect", connect13, req);
+        req.emit("proxy", { proxy: this.proxy.href, socket });
         return socket;
       }
     };
@@ -72198,10 +72591,17 @@ var init_dist12 = __esm({
 // node_modules/pac-proxy-agent/dist/index.js
 var dist_exports7 = {};
 __export(dist_exports7, {
-  PacProxyAgent: () => PacProxyAgent
+  PacProxyAgent: () => PacProxyAgent,
+  sanitizeProxyResultCredentials: () => sanitizeProxyResultCredentials
 });
+function sanitizeProxyResultCredentials(result) {
+  if (!result) {
+    return "";
+  }
+  return String(result).replace(/(\b(?:PROXY|HTTPS?|SOCKS[45]?)\s+)[^\s@]+@/gi, "$1<credentials>@");
+}
 var net10, tls7, crypto3, import_events4, import_debug18, import_url8, debug15, setServernameFromNonIpHost5, PacProxyAgent;
-var init_dist13 = __esm({
+var init_dist14 = __esm({
   "node_modules/pac-proxy-agent/dist/index.js"() {
     net10 = __toESM(require("net"), 1);
     tls7 = __toESM(require("tls"), 1);
@@ -72209,10 +72609,10 @@ var init_dist13 = __esm({
     import_events4 = require("events");
     import_debug18 = __toESM(require_src(), 1);
     import_url8 = require("url");
-    init_dist5();
     init_dist6();
-    init_dist8();
+    init_dist7();
     init_dist9();
+    init_dist10();
     debug15 = (0, import_debug18.default)("pac-proxy-agent");
     setServernameFromNonIpHost5 = (options) => {
       if (options.servername === void 0 && options.host && !net10.isIP(options.host)) {
@@ -72318,7 +72718,7 @@ var init_dist13 = __esm({
           let agent = null;
           let socket = null;
           const [type, target] = proxy.split(/\s+/);
-          debug15("Attempting to use proxy: %o", proxy);
+          debug15("Attempting to use proxy: %o", sanitizeProxyResultCredentials(proxy));
           if (type === "DIRECT") {
             if (secureEndpoint) {
               socket = tls7.connect(setServernameFromNonIpHost5(opts));
@@ -72326,18 +72726,18 @@ var init_dist13 = __esm({
               socket = net10.connect(opts);
             }
           } else if (type === "SOCKS" || type === "SOCKS5") {
-            const { SocksProxyAgent: SocksProxyAgent3 } = await Promise.resolve().then(() => (init_dist10(), dist_exports4));
+            const { SocksProxyAgent: SocksProxyAgent3 } = await Promise.resolve().then(() => (init_dist11(), dist_exports4));
             agent = new SocksProxyAgent3(`socks://${target}`, this.opts);
           } else if (type === "SOCKS4") {
-            const { SocksProxyAgent: SocksProxyAgent3 } = await Promise.resolve().then(() => (init_dist10(), dist_exports4));
+            const { SocksProxyAgent: SocksProxyAgent3 } = await Promise.resolve().then(() => (init_dist11(), dist_exports4));
             agent = new SocksProxyAgent3(`socks4a://${target}`, this.opts);
           } else if (type === "PROXY" || type === "HTTP" || type === "HTTPS") {
             const proxyURL = `${type === "HTTPS" ? "https" : "http"}://${target}`;
             if (secureEndpoint || isWebSocket) {
-              const { HttpsProxyAgent: HttpsProxyAgent3 } = await Promise.resolve().then(() => (init_dist11(), dist_exports5));
+              const { HttpsProxyAgent: HttpsProxyAgent3 } = await Promise.resolve().then(() => (init_dist12(), dist_exports5));
               agent = new HttpsProxyAgent3(proxyURL, this.opts);
             } else {
-              const { HttpProxyAgent: HttpProxyAgent3 } = await Promise.resolve().then(() => (init_dist12(), dist_exports6));
+              const { HttpProxyAgent: HttpProxyAgent3 } = await Promise.resolve().then(() => (init_dist13(), dist_exports6));
               agent = new HttpProxyAgent3(proxyURL, this.opts);
             }
           }
@@ -72357,11 +72757,11 @@ var init_dist13 = __esm({
             }
             throw new Error(`Could not determine proxy type for: ${proxy}`);
           } catch (err) {
-            debug15("Got error for proxy %o: %o", proxy, err);
+            debug15("Got error for proxy %o: %o", sanitizeProxyResultCredentials(proxy), err);
             req.emit("proxy", { proxy, error: err });
           }
         }
-        throw new Error(`Failed to establish a socket connection to proxies: ${JSON.stringify(proxies2)}`);
+        throw new Error(`Failed to establish a socket connection to proxies: ${JSON.stringify(proxies2.map(sanitizeProxyResultCredentials))}`);
       }
     };
     PacProxyAgent.protocols = [
@@ -74060,6 +74460,7 @@ async function assumeRoleWithWebIdentityTokenFile(params, client, webIdentityTok
   info("Assuming role with web identity token file");
   try {
     delete params.Tags;
+    delete params.TransitiveTagKeys;
     const creds = await client.send(
       new import_client_sts2.AssumeRoleWithWebIdentityCommand({
         ...params,
@@ -74077,6 +74478,13 @@ async function assumeRoleWithCredentials(params, client) {
     const creds = await client.send(new import_client_sts2.AssumeRoleCommand({ ...params }));
     return creds;
   } catch (error3) {
+    if (error3 instanceof import_client_sts2.PackedPolicyTooLargeException) {
+      info("Session tag size is too large; dropping droppable tags and retrying.");
+      const droppableKeys = new Set(DROPPABLE_TAG_SOURCES.map((s) => s.key));
+      params.Tags = params.Tags?.filter((tag2) => !droppableKeys.has(tag2.Key ?? ""));
+      const creds = await client.send(new import_client_sts2.AssumeRoleCommand({ ...params }));
+      return creds;
+    }
     throw new Error(`Could not assume role with user credentials: ${errorMessage(error3)}`);
   }
 }
@@ -74085,7 +74493,7 @@ var TAG_VALUE_REGEX = /^[\p{L}\p{Z}\p{N}_.:/=+\-@]*$/u;
 var MAX_TAG_KEY_LENGTH = 128;
 var MAX_TAG_VALUE_LENGTH2 = 256;
 var MAX_SESSION_TAGS = 50;
-var PROTECTED_TAG_SOURCES = [
+var NON_DROPPABLE_TAG_SOURCES = [
   { key: "Repository", envVar: "GITHUB_REPOSITORY" },
   { key: "Workflow", envVar: "GITHUB_WORKFLOW" },
   { key: "Action", envVar: "GITHUB_ACTION" },
@@ -74093,17 +74501,19 @@ var PROTECTED_TAG_SOURCES = [
   { key: "Commit", envVar: "GITHUB_SHA" },
   { key: "Branch", envVar: "GITHUB_REF" }
 ];
-var OVERRIDEABLE_TAG_SOURCES_BY_PRIORITY = [
+var DROPPABLE_TAG_SOURCES = [
   { key: "EventName", envVar: "GITHUB_EVENT_NAME" },
   { key: "BaseRef", envVar: "GITHUB_BASE_REF" },
   { key: "HeadRef", envVar: "GITHUB_HEAD_REF" },
-  { key: "RefName", envVar: "GITHUB_REF_NAME" },
   { key: "RunId", envVar: "GITHUB_RUN_ID" },
-  { key: "RefType", envVar: "GITHUB_REF_TYPE" },
   { key: "Job", envVar: "GITHUB_JOB" },
   { key: "TriggeringActor", envVar: "GITHUB_TRIGGERING_ACTOR" }
 ];
-var PROTECTED_TAG_KEYS = /* @__PURE__ */ new Set(["GitHub", ...PROTECTED_TAG_SOURCES.map((s) => s.key)]);
+var PROTECTED_TAG_KEYS = /* @__PURE__ */ new Set([
+  "GitHub",
+  ...NON_DROPPABLE_TAG_SOURCES.map((s) => s.key),
+  ...DROPPABLE_TAG_SOURCES.map((s) => s.key)
+]);
 function parseAndValidateCustomTags(customTags, existingTags) {
   let parsed;
   try {
@@ -74175,30 +74585,26 @@ async function assumeRole(params) {
     throw new Error("Missing required environment variables. Are you running in GitHub Actions?");
   }
   const protectedTags = [{ Key: "GitHub", Value: "Actions" }];
-  for (const { key, envVar } of PROTECTED_TAG_SOURCES) {
+  for (const { key, envVar } of NON_DROPPABLE_TAG_SOURCES) {
+    const value = process.env[envVar];
+    if (value) {
+      protectedTags.push({ Key: key, Value: sanitizeGitHubVariables(value) });
+    }
+  }
+  for (const { key, envVar } of DROPPABLE_TAG_SOURCES) {
     const value = process.env[envVar];
     if (value) {
       protectedTags.push({ Key: key, Value: sanitizeGitHubVariables(value) });
     }
   }
   const parsedCustomTags = customTags ? parseAndValidateCustomTags(customTags, protectedTags) : [];
-  const customTagKeys = new Set(parsedCustomTags.map((t) => t.Key));
-  const availableOverrideableSlots = MAX_SESSION_TAGS - protectedTags.length - parsedCustomTags.length;
-  const overrideableTags = [];
-  for (const { key, envVar } of OVERRIDEABLE_TAG_SOURCES_BY_PRIORITY) {
-    if (overrideableTags.length >= availableOverrideableSlots) break;
-    if (customTagKeys.has(key)) continue;
-    const value = process.env[envVar];
-    if (value) {
-      overrideableTags.push({ Key: key, Value: sanitizeGitHubVariables(value) });
-    }
-  }
-  const tagArray = [...protectedTags, ...overrideableTags, ...parsedCustomTags];
+  const tagArray = [...protectedTags, ...parsedCustomTags];
   const tags = roleSkipSessionTagging ? void 0 : tagArray;
   if (!tags) {
     debug("Role session tagging has been skipped.");
   } else {
     debug(`${tags.length} role session tags are being used:`);
+    debug(JSON.stringify(tagArray));
   }
   const transitiveTagKeysArray = roleSkipSessionTagging ? void 0 : transitiveTagKeys?.filter((key) => tags?.some((tag2) => tag2.Key === key));
   let roleArn = roleToAssume;
@@ -75319,10 +75725,10 @@ function getEnv(key) {
 // node_modules/proxy-agent/dist/index.js
 var debug16 = (0, import_debug19.default)("proxy-agent");
 var wellKnownAgents = {
-  http: async () => (await Promise.resolve().then(() => (init_dist2(), dist_exports))).HttpProxyAgent,
-  https: async () => (await Promise.resolve().then(() => (init_dist3(), dist_exports2))).HttpsProxyAgent,
-  socks: async () => (await Promise.resolve().then(() => (init_dist4(), dist_exports3))).SocksProxyAgent,
-  pac: async () => (await Promise.resolve().then(() => (init_dist13(), dist_exports7))).PacProxyAgent
+  http: async () => (await Promise.resolve().then(() => (init_dist3(), dist_exports))).HttpProxyAgent,
+  https: async () => (await Promise.resolve().then(() => (init_dist4(), dist_exports2))).HttpsProxyAgent,
+  socks: async () => (await Promise.resolve().then(() => (init_dist5(), dist_exports3))).SocksProxyAgent,
+  pac: async () => (await Promise.resolve().then(() => (init_dist14(), dist_exports7))).PacProxyAgent
 };
 var proxies = {
   http: [wellKnownAgents.http, wellKnownAgents.https],
