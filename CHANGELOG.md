@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.2.3](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.2...v6.2.3) (2026-07-22)
+
+
+### Bug Fixes
+
+* attach git credentials before Tag Major Version push ([#1877](https://github.com/aws-actions/configure-aws-credentials/issues/1877)) ([9ae780b](https://github.com/aws-actions/configure-aws-credentials/commit/9ae780b171afa8c5a3a6a2d154a765b709492482))
+* PackedPolicyTooLarge detection in STS tags ([#1899](https://github.com/aws-actions/configure-aws-credentials/issues/1899)) ([fa8d6a5](https://github.com/aws-actions/configure-aws-credentials/commit/fa8d6a57bbf44b34439fb080bbdadc7c92c285eb))
+
+## [6.2.2](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.1...v6.2.2) (2026-07-07)
+
+
+### Miscellaneous Chores
+
+* release 6.2.2 ([d01d678](https://github.com/aws-actions/configure-aws-credentials/commit/d01d678e65d6d2bd9d5ca7a95d6f07b00e25f2c2))
+
+## [6.2.1](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.0...v6.2.1) (2026-06-26)
+
+
+### Bug Fixes
+
+* enforce allowed-account-ids on all auth paths ([#1847](https://github.com/aws-actions/configure-aws-credentials/issues/1847)) ([4d281fb](https://github.com/aws-actions/configure-aws-credentials/commit/4d281fbc56a82e63c3fc14f2cc22361f34c97493))
+
 ## [6.2.0](https://github.com/aws-actions/configure-aws-credentials/compare/v6.1.3...v6.2.0) (2026-06-01)
 
 ### Features
