@@ -26,7 +26,7 @@ Authenticate to AWS in GitHub Actions (and others)! Works especially well with
          "Condition": {
            "StringEquals": {
              "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-             "token.actions.githubusercontent.com:sub": "repo:<GITHUB_ORG>/<GITHUB_REPOSITORY>:ref:refs/heads/<GITHUB_BRANCH>"
+             "token.actions.githubusercontent.com:sub": "repo:<GITHUB_ORG>@<ORG_ID>/<GITHUB_REPOSITORY>@<REPO_ID>:ref:refs/heads/<GITHUB_BRANCH>"
            }
          }
        }
@@ -36,11 +36,16 @@ Authenticate to AWS in GitHub Actions (and others)! Works especially well with
 
    </details>
 
-   Note: if you are running in a GitHub environment based workflow, the value
-   for the Sub claim will be different, in the form of
-   `repo:<GITHUB_ORG>/<GITHUB_REPOSITORY>:environment:<ENVIRONMENT_NAME>`.
-   Adjust the trust policy accordingly if you are using environment-based
-   workflows.
+   Note: The value of the `sub` claim may be different depending on the workflow
+   and the environment in which it's running. Workflows in repositories created
+   prior to [15 July 2026][immutable-sub] will omit the `@<ORG_ID>` and
+   `@<REPO_ID>` suffixes unless opted in. Workflows running in GitHub
+   environments will include an`environment:<ENVIRONMENT_NAME>` stanza.  See
+   [Claims and scoping permissions](#claims-and-scoping-permissions) for more
+   information.
+
+   [immutable-sub]:
+   https://github.blog/changelog/2026-04-23-immutable-subject-claims-for-github-actions-oidc-tokens/
 
 3. Attach permissions to the IAM Role that allow it to access the AWS resources
    you need.
@@ -56,7 +61,7 @@ Authenticate to AWS in GitHub Actions (and others)! Works especially well with
        runs-on: ubuntu-latest
        steps:
          - name: Configure AWS Credentials
-           uses: aws-actions/configure-aws-credentials@v6.1.0
+           uses: aws-actions/configure-aws-credentials@v6.2.3
            with:
              role-to-assume: <Role ARN you created in step 2>
              aws-region: <AWS Region you want to use>
@@ -245,7 +250,7 @@ specify the profile name as an environment variable in the job step:
 
 ```yaml
 - name: Configure AWS Credentials
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-1
     role-to-assume: arn:aws:iam::123456789100:role/my-role
@@ -263,14 +268,14 @@ step environment variables:
 
 ```yaml
 - name: Configure AWS credentials
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-1
     role-to-assume: arn:aws:iam::123456789100:role/my-first-role
     aws-profile: firstRoleInChain
 
 - name: assume second role
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-2
     role-to-assume: arn:aws:iam::987654321000:role/my-second-role
@@ -306,7 +311,7 @@ this action will always consider the `HTTP_PROXY` environment variable.
 Manually configured proxy:
 
 ```yaml
-uses: aws-actions/configure-aws-credentials@v6.1.0
+uses: aws-actions/configure-aws-credentials@v6.2.3
 with:
   aws-region: us-east-2
   role-to-assume: my-github-actions-role
@@ -453,7 +458,7 @@ line.
 <summary>Inline session policy examples</summary>
 
 ```yaml
-uses: aws-actions/configure-aws-credentials@v6.1.0
+uses: aws-actions/configure-aws-credentials@v6.2.3
 with:
   inline-session-policy: '{"Version":"2012-10-17","Statement":[{"Sid":"Stmt1","Effect":"Allow","Action":"s3:List*","Resource":"*"}]}'
 ```
@@ -461,7 +466,7 @@ with:
 Or we can have a nicely formatted JSON as well:
 
 ```yaml
-uses: aws-actions/configure-aws-credentials@v6.1.0
+uses: aws-actions/configure-aws-credentials@v6.2.3
 with:
   inline-session-policy: >-
     {
@@ -489,7 +494,7 @@ the role.
 <summary>Managed session policy examples</summary>
 
 ```yaml
-uses: aws-actions/configure-aws-credentials@v6.1.0
+uses: aws-actions/configure-aws-credentials@v6.2.3
 with:
   managed-session-policies: arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
 ```
@@ -497,7 +502,7 @@ with:
 And we can pass multiple managed policies likes this:
 
 ```yaml
-uses: aws-actions/configure-aws-credentials@v6.1.0
+uses: aws-actions/configure-aws-credentials@v6.2.3
 with:
   managed-session-policies: |
     arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
@@ -543,7 +548,7 @@ specify the audience through the `audience` input:
 
 ```yaml
 - name: Configure AWS Credentials for China region audience
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     audience: sts.amazonaws.com.cn
     aws-region: cn-northwest-1
@@ -593,6 +598,29 @@ claims ([1][gh-blog-oidc], [2][sub-claim-custom]).
 > unintended access. Instead, use `StringEquals` or `StringLike` operators to
 > check for specific claim values.
 
+#### Immutable subject claims
+
+Repositories created on github.com on or after 15 July 2026, and older
+repositories that have opted in, emit an [immutable `sub` claim][immutable-sub].
+This claim appends the permanent numeric ID of the organization and of the
+repository after each name, separated by `@`, so that a recycled org or
+repository name cannot be used to mint tokens matching a stale trust policy.
+For example:
+
+```text
+# Legacy (mutable) sub claim
+repo:octo-org/octo-repo:ref:refs/heads/main
+
+# Immutable sub claim
+repo:octo-org@123456/octo-repo@789012:ref:refs/heads/main
+```
+
+If your trust policy matches the legacy name-only form and your repository emits
+the immutable claim, `AssumeRoleWithWebIdentity` fails with `Not authorized to
+perform sts:AssumeRoleWithWebIdentity`. To fix this, update the `sub` condition
+to the immutable form. You can find your repository's prefix in the Settings,
+or by following the token inspection steps below.
+
 [least-privilege]:
   https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#grant-least-privilege
 [gh-blog-oidc]:
@@ -605,7 +633,7 @@ claims ([1][gh-blog-oidc], [2][sub-claim-custom]).
 If you aren't sure what claim values your workflow is producing, the
 [`actions-oidc-debugger`](https://github.com/github/actions-oidc-debugger)
 action will print the decoded JWT payload. Run it in a private repository
-only — the token itself is short-lived but the claim values may be sensitive.
+only; the token itself is short-lived but the claim values may be sensitive.
 
 See the GitHub [security-hardening guide][gh-oidc-hardening] for further
 discussion of trust conditions and threat modeling.
@@ -680,7 +708,7 @@ Provider. The audience would still be `sts.amazonaws.com` by default.
 
 ```yaml
 - name: Configure AWS Credentials
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-2
     role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
@@ -696,13 +724,13 @@ environment variable and use it to assume the role
 
 ```yaml
 - name: Configure AWS Credentials
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-2
     role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
     role-session-name: MySessionName
 - name: Configure other AWS Credentials
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-2
     role-to-assume: arn:aws:iam::987654321000:role/my-second-role
@@ -724,7 +752,7 @@ alternatively, the `TagSession` permission can be omitted if you are using the
 
 ```yaml
 - name: Configure AWS Credentials
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -745,7 +773,7 @@ like `role-to-assume: my-github-actions-role`.
 ```yaml
 - name: Configure AWS Credentials 1
   id: creds
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-2
     role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
@@ -754,7 +782,7 @@ like `role-to-assume: my-github-actions-role`.
   run: |
     aws sts get-caller-identity
 - name: Configure AWS Credentials 2
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-2
     aws-access-key-id: ${{ steps.creds.outputs.aws-access-key-id }}
@@ -776,20 +804,23 @@ the environment (for example, on a self-hosted runner where you do not want the
 assumed-role credentials to shadow an existing EC2 instance profile), pair
 `output-credentials: true` with `output-env-credentials: false`. In that mode,
 the action does not run its post-credential SDK-pickup validation step, since
-the credentials were never written to the environment.
+the credentials were never written to the environment. The action still
+validates the resolved credentials by calling `sts:GetCallerIdentity` with the
+explicit credentials, so the `allowed-account-ids` check can be enforced if
+provided.
 
 ### Configure multiple AWS profiles in a single workflow
 
 ```yaml
 - name: Configure AWS Credentials for Dev
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-east-1
     role-to-assume: arn:aws:iam::111111111111:role/dev-role
     aws-profile: dev
 
 - name: Configure AWS Credentials for Prod
-  uses: aws-actions/configure-aws-credentials@v6.1.0
+  uses: aws-actions/configure-aws-credentials@v6.2.3
   with:
     aws-region: us-west-2
     role-to-assume: arn:aws:iam::222222222222:role/prod-role
