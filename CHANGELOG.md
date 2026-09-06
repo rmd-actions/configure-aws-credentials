@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.2.4](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.3...v6.2.4) (2026-08-31)
+
+
+### Bug Fixes
+
+* account-ids handling, mask proxy as secret in logs ([#1943](https://github.com/aws-actions/configure-aws-credentials/issues/1943)) ([aa65264](https://github.com/aws-actions/configure-aws-credentials/commit/aa6526434b08748f8776b29964e3f1f5d90e7b63))
+* skip backoff sleep after the final retryAndBackoff attempt ([#1937](https://github.com/aws-actions/configure-aws-credentials/issues/1937)) ([3852440](https://github.com/aws-actions/configure-aws-credentials/commit/3852440c21363386b7b790605685d08a7c1a4876))
+
+## [6.2.3](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.2...v6.2.3) (2026-07-22)
+
+
+### Bug Fixes
+
+* attach git credentials before Tag Major Version push ([#1877](https://github.com/aws-actions/configure-aws-credentials/issues/1877)) ([9ae780b](https://github.com/aws-actions/configure-aws-credentials/commit/9ae780b171afa8c5a3a6a2d154a765b709492482))
+* PackedPolicyTooLarge detection in STS tags ([#1899](https://github.com/aws-actions/configure-aws-credentials/issues/1899)) ([fa8d6a5](https://github.com/aws-actions/configure-aws-credentials/commit/fa8d6a57bbf44b34439fb080bbdadc7c92c285eb))
+
 ## [6.2.2](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.1...v6.2.2) (2026-07-07)
 
 
