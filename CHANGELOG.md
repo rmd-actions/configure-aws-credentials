@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.3.0](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.4...v6.3.0) (2026-09-11)
+
+
+### Features
+
+* add translate-env-variables option ([#1961](https://github.com/aws-actions/configure-aws-credentials/issues/1961)) ([57b8365](https://github.com/aws-actions/configure-aws-credentials/commit/57b83659c2db2eb3b9c655186bef9a6a8f6620cb))
+
+## [6.2.4](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.3...v6.2.4) (2026-08-31)
+
+
+### Bug Fixes
+
+* account-ids handling, mask proxy as secret in logs ([#1943](https://github.com/aws-actions/configure-aws-credentials/issues/1943)) ([aa65264](https://github.com/aws-actions/configure-aws-credentials/commit/aa6526434b08748f8776b29964e3f1f5d90e7b63))
+* skip backoff sleep after the final retryAndBackoff attempt ([#1937](https://github.com/aws-actions/configure-aws-credentials/issues/1937)) ([3852440](https://github.com/aws-actions/configure-aws-credentials/commit/3852440c21363386b7b790605685d08a7c1a4876))
+
 ## [6.2.3](https://github.com/aws-actions/configure-aws-credentials/compare/v6.2.2...v6.2.3) (2026-07-22)
 
 
