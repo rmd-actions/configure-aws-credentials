@@ -19287,6 +19287,15 @@ var init_getSmithyContext = __esm({
   }
 });
 
+// node_modules/@smithy/core/dist-es/submodules/transport/hasOwn.js
+function hasOwn(o3, k5) {
+  return Object.prototype.hasOwnProperty.call(o3, k5);
+}
+var init_hasOwn = __esm({
+  "node_modules/@smithy/core/dist-es/submodules/transport/hasOwn.js"() {
+  }
+});
+
 // node_modules/@smithy/core/dist-es/submodules/transport/httpRequest.js
 function cloneQuery(query) {
   return Object.keys(query).reduce((carry, paramName) => {
@@ -19473,6 +19482,7 @@ var init_parseUrl = __esm({
 var toEndpointV1;
 var init_toEndpointV1 = __esm({
   "node_modules/@smithy/core/dist-es/submodules/transport/toEndpointV1.js"() {
+    init_hasOwn();
     init_parseUrl();
     toEndpointV1 = (endpoint) => {
       if (typeof endpoint === "object") {
@@ -19481,6 +19491,8 @@ var init_toEndpointV1 = __esm({
           if (endpoint.headers) {
             v1Endpoint.headers = {};
             for (const name in endpoint.headers) {
+              if (!hasOwn(endpoint.headers, name))
+                continue;
               v1Endpoint.headers[name.toLowerCase()] = endpoint.headers[name].join(", ");
             }
           }
@@ -19497,6 +19509,7 @@ var init_toEndpointV1 = __esm({
 var init_transport = __esm({
   "node_modules/@smithy/core/dist-es/submodules/transport/index.js"() {
     init_getSmithyContext();
+    init_hasOwn();
     init_httpRequest();
     init_httpResponse();
     init_isValidHostLabel();
@@ -20989,11 +21002,14 @@ var init_emitWarningIfUnsupportedVersion2 = __esm({
 var import_types3, knownAlgorithms, getChecksumConfiguration, resolveChecksumRuntimeConfig;
 var init_checksum = __esm({
   "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/extensions/checksum.js"() {
+    init_transport();
     import_types3 = __toESM(require_dist_cjs());
     knownAlgorithms = Object.values(import_types3.AlgorithmId);
     getChecksumConfiguration = (runtimeConfig) => {
       const checksumAlgorithms = [];
       for (const id in import_types3.AlgorithmId) {
+        if (!hasOwn(import_types3.AlgorithmId, id))
+          continue;
         const algorithmId = import_types3.AlgorithmId[id];
         if (runtimeConfig[algorithmId] === void 0) {
           continue;
@@ -21089,10 +21105,13 @@ var init_get_array_if_single_item = __esm({
 var getValueFromTextNode;
 var init_get_value_from_text_node = __esm({
   "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/get-value-from-text-node.js"() {
+    init_transport();
     getValueFromTextNode = (obj) => {
       const textNodeName = "#text";
       for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key) && obj[key][textNodeName] !== void 0) {
+        if (!hasOwn(obj, key))
+          continue;
+        if (obj[key][textNodeName] !== void 0) {
           obj[key] = obj[key][textNodeName];
         } else if (typeof obj[key] === "object" && obj[key] !== null) {
           obj[key] = getValueFromTextNode(obj[key]);
@@ -21150,7 +21169,9 @@ function map2(arg0, arg1, arg2) {
       instructions = arg1;
     }
   }
-  for (const key of Object.keys(instructions)) {
+  for (const key in instructions) {
+    if (!hasOwn(instructions, key))
+      continue;
     if (!Array.isArray(instructions[key])) {
       target[key] = instructions[key];
       continue;
@@ -21162,6 +21183,7 @@ function map2(arg0, arg1, arg2) {
 var convertMap, take, mapWithFilter, applyInstruction, nonNullish, pass;
 var init_object_mapping = __esm({
   "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/object-mapping.js"() {
+    init_transport();
     convertMap = (target) => {
       const output = {};
       for (const [k5, v] of Object.entries(target || {})) {
@@ -21172,6 +21194,8 @@ var init_object_mapping = __esm({
     take = (source, instructions) => {
       const out = {};
       for (const key in instructions) {
+        if (!hasOwn(instructions, key))
+          continue;
         applyInstruction(out, source, instructions, key);
       }
       return out;
@@ -21250,6 +21274,7 @@ var init_ser_utils = __esm({
 var _json;
 var init_serde_json = __esm({
   "node_modules/@smithy/core/dist-es/submodules/client/smithy-client/serde-json.js"() {
+    init_transport();
     _json = (obj) => {
       if (obj == null) {
         return {};
@@ -21259,7 +21284,9 @@ var init_serde_json = __esm({
       }
       if (typeof obj === "object") {
         const target = {};
-        for (const key of Object.keys(obj)) {
+        for (const key in obj) {
+          if (!hasOwn(obj, key))
+            continue;
           if (obj[key] == null) {
             continue;
           }
@@ -21522,6 +21549,7 @@ var init_copyDocumentWithTransform = __esm({
 var parseBoolean, expectBoolean, expectNumber, MAX_FLOAT, expectFloat32, expectLong, expectInt, expectInt32, expectShort, expectByte, expectSizedInt, castInt, expectNonNull, expectObject, expectString, expectUnion, strictParseDouble, strictParseFloat, strictParseFloat32, NUMBER_REGEX, parseNumber, limitedParseDouble, handleFloat, limitedParseFloat, limitedParseFloat32, parseFloatString, strictParseLong, strictParseInt, strictParseInt32, strictParseShort, strictParseByte, stackTraceWarning, logger;
 var init_parse_utils = __esm({
   "node_modules/@smithy/core/dist-es/submodules/serde/parse-utils.js"() {
+    init_transport();
     parseBoolean = (value) => {
       switch (value) {
         case "true":
@@ -21661,6 +21689,8 @@ var init_parse_utils = __esm({
       const asObject = expectObject(value);
       const setKeys = [];
       for (const k5 in asObject) {
+        if (!hasOwn(asObject, k5))
+          continue;
         if (asObject[k5] != null) {
           setKeys.push(k5);
         }
@@ -24659,6 +24689,7 @@ var init_utils = __esm({
 var resolveEndpoint;
 var init_resolveEndpoint = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/resolveEndpoint.js"() {
+    init_transport();
     init_debug();
     init_types2();
     init_utils();
@@ -24667,6 +24698,8 @@ var init_resolveEndpoint = __esm({
       const { parameters, rules } = ruleSetObject;
       options.logger?.debug?.(`${debugId} Initial EndpointParams: ${toDebugString(endpointParams)}`);
       for (const paramKey in parameters) {
+        if (!hasOwn(parameters, paramKey))
+          continue;
         const parameter = parameters[paramKey];
         const endpointParam = endpointParams[paramKey];
         if (endpointParam == null && parameter.default != null) {
@@ -25706,6 +25739,7 @@ __export(serde_exports, {
   getAwsChunkedEncodingStream: () => getAwsChunkedEncodingStream2,
   getSerdePlugin: () => getSerdePlugin,
   handleFloat: () => handleFloat,
+  hasOwn: () => hasOwn,
   headStream: () => headStream2,
   isArrayBuffer: () => isArrayBuffer,
   isBlob: () => isBlob,
@@ -25780,6 +25814,7 @@ var init_serde = __esm({
     init_splitStream();
     init_stream_type_check();
     init_stream_collector();
+    init_transport();
     Uint8ArrayBlobAdapter = class extends bindUint8ArrayBlobAdapter(toUtf8, fromUtf8, toBase64, fromBase64) {
     };
     _getRandomValues = import_node_crypto3.getRandomValues;
@@ -26607,6 +26642,7 @@ var init_Int64 = __esm({
 var HeaderMarshaller, HEADER_VALUE_TYPE, BOOLEAN_TAG, BYTE_TAG, SHORT_TAG, INT_TAG, LONG_TAG, BINARY_TAG, STRING_TAG, TIMESTAMP_TAG, UUID_TAG, UUID_PATTERN;
 var init_HeaderMarshaller = __esm({
   "node_modules/@smithy/core/dist-es/submodules/event-streams/eventstream-codec/HeaderMarshaller.js"() {
+    init_transport();
     init_serde();
     init_Int64();
     HeaderMarshaller = class {
@@ -26618,7 +26654,9 @@ var init_HeaderMarshaller = __esm({
       }
       format(headers) {
         const chunks = [];
-        for (const headerName of Object.keys(headers)) {
+        for (const headerName in headers) {
+          if (!hasOwn(headers, headerName))
+            continue;
           const bytes = this.fromUtf8(headerName);
           chunks.push(Uint8Array.from([bytes.byteLength]), bytes, this.formatHeaderValue(headers[headerName]));
         }
@@ -26633,27 +26671,27 @@ var init_HeaderMarshaller = __esm({
       formatHeaderValue(header) {
         switch (header.type) {
           case "boolean":
-            return Uint8Array.from([header.value ? HEADER_VALUE_TYPE.boolTrue : HEADER_VALUE_TYPE.boolFalse]);
+            return Uint8Array.from([header.value ? 0 : 1]);
           case "byte":
-            return Uint8Array.from([HEADER_VALUE_TYPE.byte, header.value]);
+            return Uint8Array.from([2, header.value]);
           case "short":
             const shortView = new DataView(new ArrayBuffer(3));
-            shortView.setUint8(0, HEADER_VALUE_TYPE.short);
+            shortView.setUint8(0, 3);
             shortView.setInt16(1, header.value, false);
             return new Uint8Array(shortView.buffer);
           case "integer":
             const intView = new DataView(new ArrayBuffer(5));
-            intView.setUint8(0, HEADER_VALUE_TYPE.integer);
+            intView.setUint8(0, 4);
             intView.setInt32(1, header.value, false);
             return new Uint8Array(intView.buffer);
           case "long":
             const longBytes = new Uint8Array(9);
-            longBytes[0] = HEADER_VALUE_TYPE.long;
+            longBytes[0] = 5;
             longBytes.set(header.value.bytes, 1);
             return longBytes;
           case "binary":
             const binView = new DataView(new ArrayBuffer(3 + header.value.byteLength));
-            binView.setUint8(0, HEADER_VALUE_TYPE.byteArray);
+            binView.setUint8(0, 6);
             binView.setUint16(1, header.value.byteLength, false);
             const binBytes = new Uint8Array(binView.buffer);
             binBytes.set(header.value, 3);
@@ -26661,14 +26699,14 @@ var init_HeaderMarshaller = __esm({
           case "string":
             const utf8Bytes = this.fromUtf8(header.value);
             const strView = new DataView(new ArrayBuffer(3 + utf8Bytes.byteLength));
-            strView.setUint8(0, HEADER_VALUE_TYPE.string);
+            strView.setUint8(0, 7);
             strView.setUint16(1, utf8Bytes.byteLength, false);
             const strBytes = new Uint8Array(strView.buffer);
             strBytes.set(utf8Bytes, 3);
             return strBytes;
           case "timestamp":
             const tsBytes = new Uint8Array(9);
-            tsBytes[0] = HEADER_VALUE_TYPE.timestamp;
+            tsBytes[0] = 8;
             tsBytes.set(Int64.fromNumber(header.value.valueOf()).bytes, 1);
             return tsBytes;
           case "uuid":
@@ -26676,7 +26714,7 @@ var init_HeaderMarshaller = __esm({
               throw new Error(`Invalid UUID received: ${header.value}`);
             }
             const uuidBytes = new Uint8Array(17);
-            uuidBytes[0] = HEADER_VALUE_TYPE.uuid;
+            uuidBytes[0] = 9;
             uuidBytes.set(fromHex(header.value.replace(/-/g, "")), 1);
             return uuidBytes;
         }
@@ -26689,46 +26727,46 @@ var init_HeaderMarshaller = __esm({
           const name = this.toUtf8(new Uint8Array(headers.buffer, headers.byteOffset + position, nameLength));
           position += nameLength;
           switch (headers.getUint8(position++)) {
-            case HEADER_VALUE_TYPE.boolTrue:
+            case 0:
               out[name] = {
                 type: BOOLEAN_TAG,
                 value: true
               };
               break;
-            case HEADER_VALUE_TYPE.boolFalse:
+            case 1:
               out[name] = {
                 type: BOOLEAN_TAG,
                 value: false
               };
               break;
-            case HEADER_VALUE_TYPE.byte:
+            case 2:
               out[name] = {
                 type: BYTE_TAG,
                 value: headers.getInt8(position++)
               };
               break;
-            case HEADER_VALUE_TYPE.short:
+            case 3:
               out[name] = {
                 type: SHORT_TAG,
                 value: headers.getInt16(position, false)
               };
               position += 2;
               break;
-            case HEADER_VALUE_TYPE.integer:
+            case 4:
               out[name] = {
                 type: INT_TAG,
                 value: headers.getInt32(position, false)
               };
               position += 4;
               break;
-            case HEADER_VALUE_TYPE.long:
+            case 5:
               out[name] = {
                 type: LONG_TAG,
                 value: new Int64(new Uint8Array(headers.buffer, headers.byteOffset + position, 8))
               };
               position += 8;
               break;
-            case HEADER_VALUE_TYPE.byteArray:
+            case 6:
               const binaryLength = headers.getUint16(position, false);
               position += 2;
               out[name] = {
@@ -26737,7 +26775,7 @@ var init_HeaderMarshaller = __esm({
               };
               position += binaryLength;
               break;
-            case HEADER_VALUE_TYPE.string:
+            case 7:
               const stringLength = headers.getUint16(position, false);
               position += 2;
               out[name] = {
@@ -26746,14 +26784,14 @@ var init_HeaderMarshaller = __esm({
               };
               position += stringLength;
               break;
-            case HEADER_VALUE_TYPE.timestamp:
+            case 8:
               out[name] = {
                 type: TIMESTAMP_TAG,
                 value: new Date(new Int64(new Uint8Array(headers.buffer, headers.byteOffset + position, 8)).valueOf())
               };
               position += 8;
               break;
-            case HEADER_VALUE_TYPE.uuid:
+            case 9:
               const uuidBytes = new Uint8Array(headers.buffer, headers.byteOffset + position, 16);
               position += 16;
               out[name] = {
@@ -27255,6 +27293,7 @@ var init_EventStreamSerdeConfig = __esm({
 var EventStreamSerde;
 var init_EventStreamSerde = __esm({
   "node_modules/@smithy/core/dist-es/submodules/event-streams/EventStreamSerde.js"() {
+    init_transport();
     init_schema();
     init_serde();
     EventStreamSerde = class {
@@ -27272,7 +27311,7 @@ var init_EventStreamSerde = __esm({
         this.defaultContentType = defaultContentType;
         this.compositeErrorRegistry = compositeErrorRegistry;
       }
-      async serializeEventStream({ eventStream, requestSchema, initialRequest }) {
+      async serializeEventStream({ eventStream, requestSchema, initialRequest, initialMessageType }) {
         const marshaller = this.marshaller;
         const eventStreamMember = requestSchema.getEventStreamMember();
         const unionSchema = requestSchema.getMemberSchema(eventStreamMember);
@@ -27283,7 +27322,7 @@ var init_EventStreamSerde = __esm({
           async *[Symbol.asyncIterator]() {
             if (initialRequest) {
               const headers = {
-                ":event-type": { type: "string", value: "initial-request" },
+                ":event-type": { type: "string", value: initialMessageType ?? "initial-request" },
                 ":message-type": { type: "string", value: "event" },
                 ":content-type": { type: "string", value: defaultContentType }
               };
@@ -27309,6 +27348,8 @@ var init_EventStreamSerde = __esm({
           }
           let unionMember = "";
           for (const key in event) {
+            if (!hasOwn(event, key))
+              continue;
             if (key !== "__type") {
               unionMember = key;
               break;
@@ -27327,7 +27368,7 @@ var init_EventStreamSerde = __esm({
           };
         });
       }
-      async deserializeEventStream({ response, responseSchema, initialResponseContainer }) {
+      async deserializeEventStream({ response, responseSchema, initialResponseContainer, initialMessageType }) {
         const marshaller = this.marshaller;
         const eventStreamMember = responseSchema.getEventStreamMember();
         const unionSchema = responseSchema.getMemberSchema(eventStreamMember);
@@ -27336,13 +27377,15 @@ var init_EventStreamSerde = __esm({
         const asyncIterable = marshaller.deserialize(response.body, async (event) => {
           let unionMember = "";
           for (const key in event) {
+            if (!hasOwn(event, key))
+              continue;
             if (key !== "__type") {
               unionMember = key;
               break;
             }
           }
           const body = event[unionMember].body;
-          if (unionMember === "initial-response") {
+          if (unionMember === (initialMessageType ?? "initial-response")) {
             const dataObject = await this.deserializer.read(responseSchema, body);
             delete dataObject[eventStreamMember];
             return {
@@ -27403,6 +27446,8 @@ var init_EventStreamSerde = __esm({
             throw new Error("@smithy::core/protocols - initial-response event encountered in event stream but no response schema given.");
           }
           for (const key in firstEvent.value) {
+            if (!hasOwn(firstEvent.value, key))
+              continue;
             initialResponseContainer[key] = firstEvent.value[key];
           }
         }
@@ -27565,6 +27610,7 @@ var init_event_streams = __esm({
 var HttpProtocol;
 var init_HttpProtocol = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/HttpProtocol.js"() {
+    init_transport();
     init_schema();
     init_transport();
     init_SerdeContext();
@@ -27610,6 +27656,8 @@ var init_HttpProtocol = __esm({
           }
           if (endpoint.headers) {
             for (const name in endpoint.headers) {
+              if (!hasOwn(endpoint.headers, name))
+                continue;
               request.headers[name] = endpoint.headers[name].join(", ");
             }
           }
@@ -27624,6 +27672,8 @@ var init_HttpProtocol = __esm({
           };
           if (endpoint.headers) {
             for (const name in endpoint.headers) {
+              if (!hasOwn(endpoint.headers, name))
+                continue;
               request.headers[name] = endpoint.headers[name];
             }
           }
@@ -27725,6 +27775,7 @@ var init_HttpProtocol = __esm({
 var HttpBindingProtocol;
 var init_HttpBindingProtocol = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/HttpBindingProtocol.js"() {
+    init_transport();
     init_schema();
     init_serde();
     init_transport();
@@ -27813,6 +27864,8 @@ var init_HttpBindingProtocol = __esm({
             headers[memberTraits.httpHeader.toLowerCase()] = String(serializer.flush());
           } else if (typeof memberTraits.httpPrefixHeaders === "string") {
             for (const key in inputMemberValue) {
+              if (!hasOwn(inputMemberValue, key))
+                continue;
               const val = inputMemberValue[key];
               const amalgam = memberTraits.httpPrefixHeaders + key;
               serializer.write([memberNs.getValueSchema(), { httpHeader: amalgam }], val);
@@ -27856,6 +27909,8 @@ var init_HttpBindingProtocol = __esm({
         const traits = ns.getMergedTraits();
         if (traits.httpQueryParams) {
           for (const key in data2) {
+            if (!hasOwn(data2, key))
+              continue;
             if (!(key in query)) {
               const val = data2[key];
               const valueSchema = ns.getValueSchema();
@@ -27898,6 +27953,8 @@ var init_HttpBindingProtocol = __esm({
           throw new Error("@smithy/core/protocols - HTTP Protocol error handler failed to throw.");
         }
         for (const header in response.headers) {
+          if (!hasOwn(response.headers, header))
+            continue;
           const value = response.headers[header];
           delete response.headers[header];
           response.headers[header.toLowerCase()] = value;
@@ -27976,6 +28033,8 @@ var init_HttpBindingProtocol = __esm({
           } else if (memberTraits.httpPrefixHeaders !== void 0) {
             dataObject[memberName] = {};
             for (const header in response.headers) {
+              if (!hasOwn(response.headers, header))
+                continue;
               if (header.startsWith(memberTraits.httpPrefixHeaders)) {
                 const value = response.headers[header];
                 const valueSchema = memberSchema.getValueSchema();
@@ -28000,6 +28059,7 @@ var init_HttpBindingProtocol = __esm({
 var RpcProtocol;
 var init_RpcProtocol = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/RpcProtocol.js"() {
+    init_transport();
     init_schema();
     init_transport();
     init_HttpProtocol();
@@ -28033,10 +28093,9 @@ var init_RpcProtocol = __esm({
           if (eventStreamMember) {
             if (input[eventStreamMember]) {
               const initialRequest = {};
-              for (const [memberName, memberSchema] of ns.structIterator()) {
-                if (memberName !== eventStreamMember && input[memberName]) {
-                  serializer.write(memberSchema, input[memberName]);
-                  initialRequest[memberName] = serializer.flush();
+              for (const [memberName] of ns.structIterator()) {
+                if (memberName !== eventStreamMember && input[memberName] != null) {
+                  initialRequest[memberName] = input[memberName];
                 }
               }
               payload2 = await this.serializeEventStream({
@@ -28069,6 +28128,8 @@ var init_RpcProtocol = __esm({
           throw new Error("@smithy/core/protocols - RPC Protocol error handler failed to throw.");
         }
         for (const header in response.headers) {
+          if (!hasOwn(response.headers, header))
+            continue;
           const value = response.headers[header];
           delete response.headers[header];
           response.headers[header.toLowerCase()] = value;
@@ -28525,24 +28586,27 @@ var getHttpHandlerExtensionConfiguration, resolveHttpHandlerRuntimeConfig;
 var init_httpExtensionConfiguration = __esm({
   "node_modules/@smithy/core/dist-es/submodules/protocols/protocol-http/extensions/httpExtensionConfiguration.js"() {
     getHttpHandlerExtensionConfiguration = (runtimeConfig) => {
+      if (runtimeConfig.logger && runtimeConfig.logger.constructor?.name !== "NoOpLogger") {
+        runtimeConfig.requestHandler?.updateHttpClientConfig?.(/* @__PURE__ */ Symbol.for("logger"), runtimeConfig.logger);
+      }
       return {
         setHttpHandler(handler) {
-          runtimeConfig.httpHandler = handler;
+          runtimeConfig.requestHandler = handler;
         },
         httpHandler() {
-          return runtimeConfig.httpHandler;
+          return runtimeConfig.requestHandler;
         },
         updateHttpClientConfig(key, value) {
-          runtimeConfig.httpHandler?.updateHttpClientConfig(key, value);
+          runtimeConfig.requestHandler?.updateHttpClientConfig(key, value);
         },
         httpHandlerConfigs() {
-          return runtimeConfig.httpHandler.httpHandlerConfigs();
+          return runtimeConfig.requestHandler.httpHandlerConfigs();
         }
       };
     };
     resolveHttpHandlerRuntimeConfig = (httpHandlerExtensionConfiguration) => {
       return {
-        httpHandler: httpHandlerExtensionConfiguration.httpHandler()
+        requestHandler: httpHandlerExtensionConfiguration.httpHandler()
       };
     };
   }
@@ -28557,10 +28621,12 @@ function contentLengthMiddleware(bodyLengthChecker) {
       if (body && Object.keys(headers).map((str) => str.toLowerCase()).indexOf(CONTENT_LENGTH_HEADER) === -1) {
         try {
           const length = bodyLengthChecker(body);
-          request.headers = {
-            ...request.headers,
-            [CONTENT_LENGTH_HEADER]: String(length)
-          };
+          if (length != null) {
+            request.headers = {
+              ...request.headers,
+              [CONTENT_LENGTH_HEADER]: String(length)
+            };
+          }
         } catch (ignored) {
         }
       }
@@ -28794,7 +28860,9 @@ function parseRetryAfterHeader(response, logger2) {
   if (!HttpResponse.isInstance(response)) {
     return;
   }
-  for (const header of Object.keys(response.headers)) {
+  for (const header in response.headers) {
+    if (!hasOwn(response.headers, header))
+      continue;
     const h5 = header.toLowerCase();
     if (h5 === "retry-after") {
       const retryAfter = response.headers[header];
@@ -28834,6 +28902,7 @@ function getRetryAfterHint(response, logger2) {
 }
 var init_parseRetryAfterHeader = __esm({
   "node_modules/@smithy/core/dist-es/submodules/retry/middleware-retry/parseRetryAfterHeader.js"() {
+    init_transport();
     init_protocols();
     init_serde();
   }
@@ -30308,10 +30377,13 @@ var init_setFeature2 = __esm({
 var DefaultIdentityProviderConfig;
 var init_DefaultIdentityProviderConfig = __esm({
   "node_modules/@smithy/core/dist-es/legacy-root-exports/util-identity-and-auth/DefaultIdentityProviderConfig.js"() {
+    init_transport();
     DefaultIdentityProviderConfig = class {
       authSchemes = /* @__PURE__ */ new Map();
       constructor(config) {
         for (const key in config) {
+          if (!hasOwn(config, key))
+            continue;
           const value = config[key];
           if (value !== void 0) {
             this.authSchemes.set(key, value);
@@ -33785,12 +33857,13 @@ For more information, please visit: ` + STATIC_STABILITY_DOC_URL);
 // node_modules/@smithy/node-http-handler/dist-cjs/index.js
 var require_dist_cjs6 = __commonJS({
   "node_modules/@smithy/node-http-handler/dist-cjs/index.js"(exports2) {
+    var { hasOwn: hasOwn2 } = (init_serde(), __toCommonJS(serde_exports));
+    var { streamCollector: streamCollector7 } = (init_serde(), __toCommonJS(serde_exports));
+    exports2.streamCollector = streamCollector7;
     var { buildQueryString: buildQueryString2, HttpResponse: HttpResponse2 } = (init_protocols(), __toCommonJS(protocols_exports));
     var node_https = require("node:https");
     var { Readable: Readable8 } = require("node:stream");
     var http22 = require("node:http2");
-    var { streamCollector: streamCollector7 } = (init_serde(), __toCommonJS(serde_exports));
-    exports2.streamCollector = streamCollector7;
     function buildAbortError(abortSignal) {
       const reason = abortSignal && typeof abortSignal === "object" && "reason" in abortSignal ? abortSignal.reason : void 0;
       if (reason) {
@@ -33812,6 +33885,8 @@ var require_dist_cjs6 = __commonJS({
     var getTransformedHeaders = (headers) => {
       const transformedHeaders = {};
       for (const name in headers) {
+        if (!hasOwn2(headers, name))
+          continue;
         const headerValues = headers[name];
         transformedHeaders[name] = Array.isArray(headerValues) ? headerValues.join(",") : headerValues;
       }
@@ -33997,6 +34072,8 @@ var require_dist_cjs6 = __commonJS({
         }
         if (sockets && requests) {
           for (const origin in sockets) {
+            if (!hasOwn2(sockets, origin))
+              continue;
             const socketsInUse = sockets[origin]?.length ?? 0;
             const requestsEnqueued = requests[origin]?.length ?? 0;
             if (socketsInUse >= maxSockets && requestsEnqueued >= 2 * maxSockets) {
@@ -34029,6 +34106,7 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
           this.config = await this.configProvider;
         }
         const config = this.config;
+        const logger2 = config.logger;
         const isSSL = request.protocol === "https:";
         if (!isSSL && !this.config.httpAgent) {
           this.config.httpAgent = await this.config.httpAgentProvider();
@@ -34072,7 +34150,7 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             });
           }
           socketWarningTimeoutId = timing.setTimeout(() => {
-            this.socketWarningTimestamp = _NodeHttpHandler.checkSocketUsage(agent, this.socketWarningTimestamp, config.logger);
+            this.socketWarningTimestamp = _NodeHttpHandler.checkSocketUsage(agent, this.socketWarningTimestamp, logger2);
           }, config.socketAcquisitionWarningTimeout ?? (config.requestTimeout ?? 2e3) + (config.connectionTimeout ?? 1e3));
           const queryString = request.query ? buildQueryString2(request.query) : "";
           let auth = void 0;
@@ -34136,7 +34214,7 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
           }
           const effectiveRequestTimeout = requestTimeout ?? config.requestTimeout;
           connectionTimeoutId = setConnectionTimeout(req, reject, config.connectionTimeout);
-          requestTimeoutId = setRequestTimeout(req, reject, effectiveRequestTimeout, config.throwOnRequestTimeout, config.logger ?? console);
+          requestTimeoutId = setRequestTimeout(req, reject, effectiveRequestTimeout, config.throwOnRequestTimeout, logger2 ?? console);
           socketTimeoutId = setSocketTimeout(req, reject, config.socketTimeout);
           const httpAgent = nodeHttpsOptions.agent;
           if (typeof httpAgent === "object" && "keepAlive" in httpAgent) {
@@ -34154,6 +34232,12 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
       updateHttpClientConfig(key, value) {
         this.config = void 0;
         this.configProvider = this.configProvider.then((config) => {
+          if (key === /* @__PURE__ */ Symbol.for("logger")) {
+            return {
+              ...config,
+              logger: config.logger ?? value
+            };
+          }
           return {
             ...config,
             [key]: value
@@ -34829,7 +34913,7 @@ var init_package = __esm({
   "node_modules/@aws-sdk/nested-clients/package.json"() {
     package_default = {
       name: "@aws-sdk/nested-clients",
-      version: "3.997.42",
+      version: "3.997.44",
       description: "Nested clients for AWS SDK packages.",
       homepage: "https://github.com/aws/aws-sdk-js-v3/tree/main/packages/nested-clients",
       license: "Apache-2.0",
@@ -34929,20 +35013,20 @@ var init_package = __esm({
         "test:watch": "yarn g:vitest watch"
       },
       dependencies: {
-        "@aws-sdk/core": "^3.977.7",
-        "@aws-sdk/signature-v4-multi-region": "^3.996.44",
-        "@aws-sdk/types": "^3.974.3",
-        "@smithy/core": "^3.31.1",
-        "@smithy/fetch-http-handler": "^5.6.13",
-        "@smithy/node-http-handler": "^4.9.13",
-        "@smithy/types": "^4.16.1",
+        "@aws-sdk/core": "^3.977.9",
+        "@aws-sdk/signature-v4-multi-region": "^3.996.46",
+        "@aws-sdk/types": "^3.974.5",
+        "@smithy/core": "^3.33.3",
+        "@smithy/fetch-http-handler": "^5.7.2",
+        "@smithy/node-http-handler": "^4.11.3",
+        "@smithy/types": "^4.17.2",
         tslib: "^2.6.2"
       },
       devDependencies: {
         concurrently: "7.0.0",
         "downlevel-dts": "0.10.1",
         premove: "4.0.0",
-        typescript: "~6.0.3"
+        typescript: "~7.0.2"
       },
       engines: {
         node: ">=20.0.0"
@@ -34980,6 +35064,7 @@ var init_cbor_types = __esm({
 var loadSmithyRpcV2CborErrorCode;
 var init_parseCborBody = __esm({
   "node_modules/@smithy/core/dist-es/submodules/cbor/parseCborBody.js"() {
+    init_transport();
     loadSmithyRpcV2CborErrorCode = (output, data2) => {
       const sanitizeErrorCode2 = (rawValue) => {
         let cleanValue = rawValue;
@@ -35002,6 +35087,8 @@ var init_parseCborBody = __esm({
       }
       let codeKey;
       for (const key in data2) {
+        if (!hasOwn(data2, key))
+          continue;
         if (key.toLowerCase() === "code") {
           codeKey = key;
           break;
@@ -35227,6 +35314,8 @@ function writeStruct(ns, value, serdeContext) {
   }
   if (typeof value.__type === "string") {
     for (const k5 in value) {
+      if (!hasOwn(value, k5))
+        continue;
       if (!memberNames.includes(k5)) {
         writeString(k5);
         writeUntypedValue(value[k5]);
@@ -35288,6 +35377,8 @@ function writeMap(ns, value, isDocument, serdeContext) {
   const valueSchema = ns.getValueSchema();
   const keys = [];
   for (const k5 in value) {
+    if (!hasOwn(value, k5))
+      continue;
     const v = value[k5];
     if (isDocument ? v !== void 0 : v != null || sparse) {
       keys.push(k5);
@@ -35537,14 +35628,26 @@ function writeTag(tagValue, innerValue) {
   writeUntypedValue(innerValue);
 }
 function writeNumericValue(nv2) {
-  const decimalIndex = nv2.string.indexOf(".");
-  const exponent = decimalIndex === -1 ? 0 : decimalIndex - nv2.string.length + 1;
-  const mantissa = BigInt(nv2.string.replace(".", ""));
+  let str = nv2.string;
+  let expOffset = BigInt(0);
+  const eIndex = str.search(/[eE]/);
+  if (eIndex !== -1) {
+    expOffset = BigInt(str.slice(eIndex + 1));
+    str = str.slice(0, eIndex);
+  }
+  const decimalIndex = str.indexOf(".");
+  const fractionDigits = decimalIndex === -1 ? 0 : str.length - decimalIndex - 1;
+  const exponent = expOffset - BigInt(fractionDigits);
+  const mantissa = BigInt(str.replace(".", ""));
   ensure(9);
   buf[cursor++] = 196;
   encodeHeader(majorList, 2);
   ensure(9);
-  writeInteger(exponent);
+  if (exponent >= -0x20000000000000n && exponent <= 0x1fffffffffffffn) {
+    writeInteger(Number(exponent));
+  } else {
+    writeBigInt(exponent);
+  }
   writeBigInt(mantissa);
 }
 function writeTimestamp(date2) {
@@ -35560,6 +35663,7 @@ function writeTimestamp(date2) {
 var CborShapeSerializer2, CBOR_STRUCT_CACHE, USE_BUFFER, textEncoder, INITIAL_BUFFER_SIZE, buf, view, cursor, STRING_CACHE_MAX, stringEncodeCache, encodeCacheEpoch, encodeCacheSaturated;
 var init_CborShapeSerializer2 = __esm({
   "node_modules/@smithy/core/dist-es/submodules/cbor/codec-v2/CborShapeSerializer2.js"() {
+    init_transport();
     init_protocols();
     init_schema();
     init_serde();
@@ -35683,6 +35787,8 @@ function readStruct(ns, count, startPos) {
   if (isUnion) {
     let resultEmpty = true;
     for (const _ in result) {
+      if (!hasOwn(result, _))
+        continue;
       resultEmpty = false;
       break;
     }
@@ -35721,20 +35827,34 @@ function readTag(ns) {
   if (tagNumber === 4) {
     const docSchema2 = NormalizedSchema.of(15);
     const pair = readValue(docSchema2);
-    const [exponent, mantissa] = pair;
+    const [rawExponent, mantissa] = pair;
     const normalizer = mantissa < 0 ? -1 : 1;
-    const mantissaStr = "0".repeat(Math.abs(exponent) + 1) + String(BigInt(normalizer) * BigInt(mantissa));
-    let numericString;
+    const absMantissa = BigInt(normalizer) * BigInt(mantissa);
+    const mantissaDigits = String(absMantissa);
     const sign2 = mantissa < 0 ? "-" : "";
-    numericString = exponent === 0 ? mantissaStr : mantissaStr.slice(0, mantissaStr.length + exponent) + "." + mantissaStr.slice(exponent);
-    numericString = numericString.replace(/^0+/g, "");
-    if (numericString === "") {
-      numericString = "0";
+    let numericString;
+    const isSmallExponent = typeof rawExponent === "number" && Math.abs(rawExponent) <= 2 ** 28;
+    if (isSmallExponent) {
+      const exponent = rawExponent;
+      const mantissaStr = "0".repeat(Math.abs(exponent) + 1) + mantissaDigits;
+      numericString = exponent === 0 ? mantissaStr : mantissaStr.slice(0, mantissaStr.length + exponent) + "." + mantissaStr.slice(exponent);
+      numericString = numericString.replace(/^0+/g, "");
+      if (numericString === "") {
+        numericString = "0";
+      }
+      if (numericString[0] === ".") {
+        numericString = "0" + numericString;
+      }
+      numericString = sign2 + numericString;
+    } else {
+      const bigExponent = BigInt(rawExponent);
+      if (mantissaDigits.length === 1) {
+        numericString = sign2 + mantissaDigits + "e" + String(bigExponent);
+      } else {
+        const adjustedExp = bigExponent + BigInt(mantissaDigits.length - 1);
+        numericString = sign2 + mantissaDigits[0] + "." + mantissaDigits.slice(1) + "e" + String(adjustedExp);
+      }
     }
-    if (numericString[0] === ".") {
-      numericString = "0" + numericString;
-    }
-    numericString = sign2 + numericString;
     return nv(numericString);
   }
   const docSchema = NormalizedSchema.of(15);
@@ -35831,6 +35951,8 @@ function readMapIndefinite(ns) {
         if (isUnion) {
           let resultEmpty = true;
           for (const _ in result) {
+            if (!hasOwn(result, _))
+              continue;
             resultEmpty = false;
             break;
           }
@@ -36126,6 +36248,8 @@ function transformObject(ns, value) {
   if (ns.isMapSchema()) {
     const targetSchema = ns.getValueSchema();
     for (const key in value) {
+      if (!hasOwn(value, key))
+        continue;
       newObject[key] = transformObject(targetSchema, value[key]);
     }
   } else if (ns.isStructSchema()) {
@@ -36134,6 +36258,8 @@ function transformObject(ns, value) {
     if (isUnion) {
       keys = /* @__PURE__ */ new Set();
       for (const k5 in value) {
+        if (!hasOwn(value, k5))
+          continue;
         if (k5 !== "__type") {
           keys.add(k5);
         }
@@ -36150,6 +36276,8 @@ function transformObject(ns, value) {
     if (isUnion && keys?.size === 1) {
       let newObjectEmpty = true;
       for (const _ in newObject) {
+        if (!hasOwn(newObject, _))
+          continue;
         newObjectEmpty = false;
         break;
       }
@@ -36159,6 +36287,8 @@ function transformObject(ns, value) {
       }
     } else if (typeof value.__type === "string") {
       for (const k5 in value) {
+        if (!hasOwn(value, k5))
+          continue;
         if (!(k5 in newObject)) {
           newObject[k5] = value[k5];
         }
@@ -36170,6 +36300,7 @@ function transformObject(ns, value) {
 var CborShapeDeserializer2, USE_BUFFER2, textDecoder, payload, isBuffer, dataView, pos, end, STRING_CACHE_SIZE, stringCache, stringCacheEpochs, cacheEpoch;
 var init_CborShapeDeserializer2 = __esm({
   "node_modules/@smithy/core/dist-es/submodules/cbor/codec-v2/CborShapeDeserializer2.js"() {
+    init_transport();
     init_protocols();
     init_schema();
     init_serde();
@@ -36262,9 +36393,8 @@ var init_SmithyRpcV2CborProtocol = __esm({
             this.serializer.write(15, {});
             request.body = this.serializer.flush();
           }
-          try {
+          if (request.body instanceof Uint8Array) {
             request.headers["content-length"] = String(request.body.byteLength);
-          } catch (ignored) {
           }
         }
         const { service, operation: operation2 } = getSmithyContext(context);
@@ -40760,7 +40890,7 @@ var require_dist_cjs9 = __commonJS({
       const tokenString = JSON.stringify(ssoToken, null, 2);
       return writeFile2(tokenFilepath, tokenString);
     };
-    var lastRefreshAttemptTime = /* @__PURE__ */ new Date(0);
+    var lastRefreshAttemptTimes = /* @__PURE__ */ new Map();
     var fromSso = (init = {}) => async ({ callerClientConfig } = {}) => {
       init.logger?.debug("@aws-sdk/token-providers - fromSso");
       const profiles = await parseKnownFiles2(init);
@@ -40795,11 +40925,15 @@ var require_dist_cjs9 = __commonJS({
       validateTokenKey("accessToken", ssoToken.accessToken);
       validateTokenKey("expiresAt", ssoToken.expiresAt);
       const { accessToken, expiresAt } = ssoToken;
-      const existingToken = { token: accessToken, expiration: new Date(expiresAt) };
+      const existingToken = {
+        token: accessToken,
+        expiration: new Date(expiresAt)
+      };
       if (existingToken.expiration.getTime() - Date.now() > EXPIRE_WINDOW_MS) {
         return existingToken;
       }
-      if (Date.now() - lastRefreshAttemptTime.getTime() < 30 * 1e3) {
+      const lastRefreshAttemptTime = lastRefreshAttemptTimes.get(ssoSessionName) ?? 0;
+      if (Date.now() - lastRefreshAttemptTime < 30 * 1e3) {
         validateTokenExpiry(existingToken);
         return existingToken;
       }
@@ -40807,7 +40941,7 @@ var require_dist_cjs9 = __commonJS({
       validateTokenKey("clientSecret", ssoToken.clientSecret, true);
       validateTokenKey("refreshToken", ssoToken.refreshToken, true);
       try {
-        lastRefreshAttemptTime.setTime(Date.now());
+        lastRefreshAttemptTimes.set(ssoSessionName, Date.now());
         const newSsoOidcToken = await getNewSsoOidcToken(ssoToken, ssoRegion, init, callerClientConfig);
         validateTokenKey("accessToken", newSsoOidcToken.accessToken);
         validateTokenKey("expiresIn", newSsoOidcToken.expiresIn);
@@ -44954,7 +45088,7 @@ var require_dist_cjs16 = __commonJS({
       Region: { type: "builtInParams", name: "region" },
       UseDualStack: { type: "builtInParams", name: "useDualstackEndpoint" }
     };
-    var version = "3.1105.0";
+    var version = "3.1115.0";
     var packageInfo = {
       version
     };
@@ -66105,7 +66239,7 @@ var require_types = __commonJS({
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var Op = Object.prototype;
     var objToStr = Op.toString;
-    var hasOwn = Op.hasOwnProperty;
+    var hasOwn2 = Op.hasOwnProperty;
     var BaseType = (
       /** @class */
       (function() {
@@ -66257,7 +66391,7 @@ var require_types = __commonJS({
             if (this.finalized !== true || that.finalized !== true) {
               throw new Error("");
             }
-            return hasOwn.call(that.allSupertypes, this.typeName);
+            return hasOwn2.call(that.allSupertypes, this.typeName);
           } else {
             throw new Error(that + " is not a Def");
           }
@@ -66386,10 +66520,10 @@ var require_types = __commonJS({
         // The Def object d returned from Type.def may be used to configure the
         // type d.type by calling methods such as d.bases, d.build, and d.field.
         def: function(typeName) {
-          return hasOwn.call(defCache, typeName) ? defCache[typeName] : defCache[typeName] = new DefImpl(typeName);
+          return hasOwn2.call(defCache, typeName) ? defCache[typeName] : defCache[typeName] = new DefImpl(typeName);
         },
         hasDef: function(typeName) {
-          return hasOwn.call(defCache, typeName);
+          return hasOwn2.call(defCache, typeName);
         }
       };
       var builtInCtorFns = [];
@@ -66432,7 +66566,7 @@ var require_types = __commonJS({
       function defFromValue(value) {
         if (value && typeof value === "object") {
           var type = value.type;
-          if (typeof type === "string" && hasOwn.call(defCache, type)) {
+          if (typeof type === "string" && hasOwn2.call(defCache, type)) {
             var d5 = defCache[type];
             if (d5.finalized) {
               return d5;
@@ -66491,10 +66625,10 @@ var require_types = __commonJS({
             });
             this.buildable = true;
             var addParam = function(built, param, arg, isArgAvailable) {
-              if (hasOwn.call(built, param))
+              if (hasOwn2.call(built, param))
                 return;
               var all = _this.allFields;
-              if (!hasOwn.call(all, param)) {
+              if (!hasOwn2.call(all, param)) {
                 throw new Error("" + param);
               }
               var field = all[param];
@@ -66546,7 +66680,7 @@ var require_types = __commonJS({
               }
               var built = Object.create(nodePrototype);
               Object.keys(_this.allFields).forEach(function(param) {
-                if (hasOwn.call(obj, param)) {
+                if (hasOwn2.call(obj, param)) {
                   addParam(built, param, obj[param], true);
                 } else {
                   addParam(built, param, null, false);
@@ -66591,7 +66725,7 @@ var require_types = __commonJS({
               allSupertypes[this.typeName] = this;
               this.fieldNames.length = 0;
               for (var fieldName in allFields) {
-                if (hasOwn.call(allFields, fieldName) && !allFields[fieldName].hidden) {
+                if (hasOwn2.call(allFields, fieldName) && !allFields[fieldName].hidden) {
                   this.fieldNames.push(fieldName);
                 }
               }
@@ -66610,7 +66744,7 @@ var require_types = __commonJS({
         })(Def)
       );
       function getSupertypeNames(typeName) {
-        if (!hasOwn.call(defCache, typeName)) {
+        if (!hasOwn2.call(defCache, typeName)) {
           throw new Error("");
         }
         var d5 = defCache[typeName];
@@ -66631,7 +66765,7 @@ var require_types = __commonJS({
           }
           for (var j5 = 0; j5 < d5.supertypeList.length; ++j5) {
             var superTypeName = d5.supertypeList[j5];
-            if (hasOwn.call(candidates, superTypeName)) {
+            if (hasOwn2.call(candidates, superTypeName)) {
               table[typeName] = superTypeName;
               break;
             }
@@ -66737,14 +66871,14 @@ var require_types = __commonJS({
           if (d5.finalized !== true) {
             throw new Error("");
           }
-          if (hasOwn.call(lastSeen, typeName)) {
+          if (hasOwn2.call(lastSeen, typeName)) {
             delete list2[lastSeen[typeName]];
           }
           lastSeen[typeName] = pos2;
           list2.push.apply(list2, d5.baseNames);
         }
         for (var to = 0, from = to, len = list2.length; from < len; ++from) {
-          if (hasOwn.call(list2, from)) {
+          if (hasOwn2.call(list2, from)) {
             list2[to++] = list2[from];
           }
         }
@@ -66790,7 +66924,7 @@ var require_path = __commonJS({
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var types_1 = tslib_1.__importDefault(require_types());
     var Op = Object.prototype;
-    var hasOwn = Op.hasOwnProperty;
+    var hasOwn2 = Op.hasOwnProperty;
     function pathPlugin(fork) {
       var types3 = fork.use(types_1.default);
       var isArray = types3.builtInTypes.array;
@@ -66820,7 +66954,7 @@ var require_path = __commonJS({
         var cache5 = getChildCache(path4);
         var actualChildValue = path4.getValueProperty(name);
         var childPath = cache5[name];
-        if (!hasOwn.call(cache5, name) || // Ensure consistency between cache and reality.
+        if (!hasOwn2.call(cache5, name) || // Ensure consistency between cache and reality.
         childPath.value !== actualChildValue) {
           childPath = cache5[name] = new path4.constructor(actualChildValue, path4, name);
         }
@@ -66846,13 +66980,13 @@ var require_path = __commonJS({
         var len = this.value.length;
         var i5 = 0;
         for (var i5 = 0; i5 < len; ++i5) {
-          if (hasOwn.call(this.value, i5)) {
+          if (hasOwn2.call(this.value, i5)) {
             childPaths[i5] = this.get(i5);
           }
         }
         context = context || this;
         for (i5 = 0; i5 < len; ++i5) {
-          if (hasOwn.call(childPaths, i5)) {
+          if (hasOwn2.call(childPaths, i5)) {
             callback.call(context, childPaths[i5]);
           }
         }
@@ -66900,7 +67034,7 @@ var require_path = __commonJS({
         var moves = /* @__PURE__ */ Object.create(null);
         var cache5 = getChildCache(path4);
         for (var i5 = start; i5 < end2; ++i5) {
-          if (hasOwn.call(path4.value, i5)) {
+          if (hasOwn2.call(path4.value, i5)) {
             var childPath = path4.get(i5);
             if (childPath.name !== i5) {
               throw new Error("");
@@ -67092,7 +67226,7 @@ var require_scope = __commonJS({
     Object.defineProperty(exports2, "__esModule", { value: true });
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var types_1 = tslib_1.__importDefault(require_types());
-    var hasOwn = Object.prototype.hasOwnProperty;
+    var hasOwn2 = Object.prototype.hasOwnProperty;
     function scopePlugin(fork) {
       var types3 = fork.use(types_1.default);
       var Type = types3.Type;
@@ -67144,11 +67278,11 @@ var require_scope = __commonJS({
       Sp.didScan = false;
       Sp.declares = function(name) {
         this.scan();
-        return hasOwn.call(this.bindings, name);
+        return hasOwn2.call(this.bindings, name);
       };
       Sp.declaresType = function(name) {
         this.scan();
-        return hasOwn.call(this.types, name);
+        return hasOwn2.call(this.types, name);
       };
       Sp.declareTemporary = function(prefix) {
         if (prefix) {
@@ -67264,7 +67398,7 @@ var require_scope = __commonJS({
           if (namedTypes.CatchClause.check(node) && // TODO Broaden this to accept any pattern.
           namedTypes.Identifier.check(node.param)) {
             var catchParamName = node.param.name;
-            var hadBinding = hasOwn.call(bindings, catchParamName);
+            var hadBinding = hasOwn2.call(bindings, catchParamName);
             recursiveScanScope(path4.get("body"), bindings, scopeTypes2);
             if (!hadBinding) {
               delete bindings[catchParamName];
@@ -67278,7 +67412,7 @@ var require_scope = __commonJS({
         var pattern = patternPath.value;
         namedTypes.Pattern.assert(pattern);
         if (namedTypes.Identifier.check(pattern)) {
-          if (hasOwn.call(bindings, pattern.name)) {
+          if (hasOwn2.call(bindings, pattern.name)) {
             bindings[pattern.name].push(patternPath);
           } else {
             bindings[pattern.name] = [patternPath];
@@ -67315,7 +67449,7 @@ var require_scope = __commonJS({
         var pattern = patternPath.value;
         namedTypes.Pattern.assert(pattern);
         if (namedTypes.Identifier.check(pattern)) {
-          if (hasOwn.call(types4, pattern.name)) {
+          if (hasOwn2.call(types4, pattern.name)) {
             types4[pattern.name].push(patternPath);
           } else {
             types4[pattern.name] = [patternPath];
@@ -67710,7 +67844,7 @@ var require_path_visitor = __commonJS({
     var tslib_1 = (init_tslib_es6(), __toCommonJS(tslib_es6_exports));
     var types_1 = tslib_1.__importDefault(require_types());
     var node_path_1 = tslib_1.__importDefault(require_node_path());
-    var hasOwn = Object.prototype.hasOwnProperty;
+    var hasOwn2 = Object.prototype.hasOwnProperty;
     function pathVisitorPlugin(fork) {
       var types3 = fork.use(types_1.default);
       var NodePath = fork.use(node_path_1.default);
@@ -67724,7 +67858,7 @@ var require_path_visitor = __commonJS({
         }
         this._reusableContextStack = [];
         this._methodNameTable = computeMethodNameTable(this);
-        this._shouldVisitComments = hasOwn.call(this._methodNameTable, "Block") || hasOwn.call(this._methodNameTable, "Line");
+        this._shouldVisitComments = hasOwn2.call(this._methodNameTable, "Block") || hasOwn2.call(this._methodNameTable, "Line");
         this.Context = makeContextConstructor(this);
         this._visiting = false;
         this._changeReported = false;
@@ -67772,7 +67906,7 @@ var require_path_visitor = __commonJS({
       };
       function extend(target, source) {
         for (var property in source) {
-          if (hasOwn.call(source, property)) {
+          if (hasOwn2.call(source, property)) {
             target[property] = source[property];
           }
         }
@@ -67863,7 +67997,7 @@ var require_path_visitor = __commonJS({
           var childPaths = [];
           for (var i5 = 0; i5 < childCount; ++i5) {
             var childName = childNames[i5];
-            if (!hasOwn.call(value, childName)) {
+            if (!hasOwn2.call(value, childName)) {
               value[childName] = types3.getFieldValue(value, childName);
             }
             childPaths.push(path4.get(childName));
@@ -68011,7 +68145,7 @@ var require_equiv = __commonJS({
       var isObject = types3.builtInTypes.object;
       var isDate = types3.builtInTypes.Date;
       var isRegExp = types3.builtInTypes.RegExp;
-      var hasOwn = Object.prototype.hasOwnProperty;
+      var hasOwn2 = Object.prototype.hasOwnProperty;
       function astNodesAreEquivalent(a5, b6, problemPath) {
         if (isArray.check(problemPath)) {
           problemPath.length = 0;
@@ -68128,7 +68262,7 @@ var require_equiv = __commonJS({
         }
         for (i5 = 0; i5 < bNameCount; ++i5) {
           name = bNames[i5];
-          if (!hasOwn.call(seenNames, name)) {
+          if (!hasOwn2.call(seenNames, name)) {
             problemPath.push(name);
             return false;
           }
@@ -74711,11 +74845,11 @@ async function retryAndBackoff(fn, isRetryable, maxRetries = 12, retries = 0, ba
     info(
       `Retry${opName}: attempt ${nextRetry} of ${maxRetries} failed: ${errorMessage(err)}. Retrying after ${Math.floor(delay)}ms.`
     );
-    await sleep2(delay);
     if (nextRetry >= maxRetries) {
       info(`Retry${opName}: reached max retries (${maxRetries}); giving up.`);
       throw err;
     }
+    await sleep2(delay);
     return await retryAndBackoff(fn, isRetryable, maxRetries, nextRetry, base, label);
   }
 }
